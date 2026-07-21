@@ -82,11 +82,11 @@ class Student
         String status;
 
         status = gradeStatus();
-        System.out.println("""
+        System.out.printf("""
                 Student ID: %d
                 Student Name: %s
                 Student Final Grade: %.2f
                 Student Status: %s
-                """.formatted(id, name, finalGrade, status));
+                """, id, name, finalGrade, status);
     }
 }

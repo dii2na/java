@@ -22,20 +22,20 @@ class StudentManager
             throw new IllegalArgumentException("Student array must not contain null elements.");
     }
 
-    private void mergeSort(Student[] students, int left, int right)
+    private void mergeSort(int left, int right)
     {
         int mid;
 
         if (left < right)
         {
             mid = (left + right) / 2;
-            mergeSort(students, left, mid);
-            mergeSort(students, mid + 1, right);
-            merge(students, left, mid, right);
+            mergeSort(left, mid);
+            mergeSort(mid + 1, right);
+            merge(left, mid, right);
         }
     }
     
-    private void merge(Student[] students, int left, int mid, int right)
+    private void merge(int left, int mid, int right)
     {
         int leftSize;
         int rightSize;
@@ -161,6 +161,6 @@ class StudentManager
 
     public void sortStudentsByGrade()
     {
-        mergeSort(students, 0, students.length - 1);
+        mergeSort(0, students.length - 1);
     }
 }

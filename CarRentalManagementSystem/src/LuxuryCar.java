@@ -49,4 +49,13 @@ public class LuxuryCar extends Car
         subtotal = (getPricePerDay() * days) + insuranceFee;
         return addTax(subtotal);
     }
+
+    @Override
+    public String toString()
+    {
+        return super.toString()
+                .replace("----------------------------------------\n", 
+                        "Insurance Fee: $" + String.format("%.2f", insuranceFee) 
+                        + "\n----------------------------------------\n");
+    }
 }

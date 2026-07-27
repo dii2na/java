@@ -1,14 +1,16 @@
 NAME = Main
 SRC = src/*.java
 BIN = bin
+JAVAC = javac
+JAVA = java
 
 all:
 	@mkdir -p $(BIN)
-	@javac -d $(BIN) $(SRC)
+	@$(JAVAC) -d $(BIN) $(SRC)
 	@echo "Compilation finished. Run the program using 'make run'."
 
 run:
-	@java -cp $(BIN) $(NAME)
+	@$(JAVA) -cp $(BIN) $(NAME)
 
 clean:
 	@rm -rf $(BIN)

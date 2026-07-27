@@ -226,7 +226,7 @@ public class Main
         String phone;
 
         id = InputReader.readIntPositive(scanner, "customer ID");
-        if (!validateCustomer(system, id, false))
+        if (system.customerExists(id))
         {
             System.out.println("Customer ID already exists.");
             return;
@@ -246,6 +246,11 @@ public class Main
         int days;
         String receipt;
 
+        if (system.getAvailableCars().length == 0)
+        {
+            System.out.println("No available cars to rent.");
+            return;
+        }
         customerId = InputReader.readIntPositive(scanner, "customer ID");
         if (!validateCustomer(system, customerId, true))
             return;

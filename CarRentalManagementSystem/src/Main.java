@@ -226,7 +226,7 @@ public class Main
         String phone;
 
         id = InputReader.readIntPositive(scanner, "customer ID");
-        if (system.customerExists(id))
+        if (!validateCustomer(system, id, false))
         {
             System.out.println("Customer ID already exists.");
             return;

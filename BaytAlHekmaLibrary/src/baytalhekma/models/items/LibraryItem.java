@@ -4,6 +4,9 @@ import static utils.ConsoleUtils.*;
 import baytalhekma.enums.ItemStatus;
 import baytalhekma.enums.ItemCategory;
 import utils.Validator;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public abstract class LibraryItem
 {
@@ -22,6 +25,7 @@ public abstract class LibraryItem
     private final String title;
     private ItemStatus status;
     private String borrowerName;
+    private String borrowerId;
     private int renewalCount;
     private final int loanPeriod;
     private final double fineRate;
@@ -57,6 +61,11 @@ public abstract class LibraryItem
     public int getCatalogueId()
     {
         return (catalogueId);
+    }
+
+    public String getBorrowerId()
+    {
+        return (borrowerId);
     }
 
     public String getTitle()
@@ -129,32 +138,36 @@ public abstract class LibraryItem
         return (hasStatus(ItemStatus.AVAILABLE));
     }
 
-    private void checkOnLoan()
+    public final void returnItem()
     {
         if (!isOnLoan())
             throw new IllegalStateException("Item is not currently on loan");
-    }
-
-    public final void returnItem()
-    {
-        checkOnLoan();
         markAvailable();
         borrowerName = null;
+        borrowerId = null;
         renewalCount = 0;
     }
 
-    public void lendToMember(String memberName)
+    public void lendToMember(String memberName, String memberId)
     {
         if (!isAvailable())
             throw new IllegalStateException("Item is not available for borrowing");
         this.borrowerName = Validator.validateString(memberName, "Member name", false);
+        this.borrowerId = Validator.validateString(memberId, "Membership ID", false);
         changeStatus(ItemStatus.ON_LOAN);
     }
 
-    public void recordRenewal()
+    protected boolean canRenew(int renewalLimit)
     {
-        checkOnLoan();
+        return (isOnLoan() && renewalCount < renewalLimit);
+    }
+
+    protected boolean recordRenewal(int renewalLimit)
+    {
+        if (!canRenew(renewalLimit))
+            return (false);
         renewalCount++;
+        return (true);
     }
 
     public double calculateItemFine(int overdueDays)
@@ -165,19 +178,32 @@ public abstract class LibraryItem
 
     public double calculateFine(int overdueDays)
     {
+        Validator.validateNonNegative(overdueDays, "Overdue days");
+        if (overdueDays == 0)
+            return (0.0);
         return (ADMINISTRATIVE_CHARGE + calculateItemFine(overdueDays));
     }
 
-    @Override
-    public String toString()
+    protected String formatItemRow(Object... extraValues)
     {
-        return (formatRow(
+        List<Object> values;
+
+        values = new ArrayList<>(List.of(
                 catalogueId,
                 title,
                 category,
                 status,
                 borrowerName == null ? "None" : borrowerName,
                 loanPeriod + " days",
-                money(calculateFine(1))));
+                money(calculateFine(1))
+        ));
+        values.addAll(List.of(extraValues));
+        return (formatRow(values.toArray()));
+    }
+
+    @Override
+    public String toString()
+    {
+        return (formatItemRow());
     }
 }

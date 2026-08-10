@@ -70,9 +70,14 @@ public final class ConsoleUtils
         return ("%.2f".formatted(amount));
     }
 
+    public static String percentage(double value)
+    {
+        return ("%.2f%%".formatted(value));
+    }
+
     public static String percent(double fraction)
     {
-        return ("%.2f%%".formatted(fraction * 100));
+        return (percentage(fraction * 100));
     }
 
     public static String yesNo(boolean value)
@@ -85,13 +90,31 @@ public final class ConsoleUtils
         return ("%s%n  %s%n%s%n".formatted(DOUBLE_SEPARATOR, title, DOUBLE_SEPARATOR));
     }
 
+    private static String center(Object value, int width)
+    {
+        String text;
+        int padding;
+
+        text = String.valueOf(value);
+        padding = width - text.length();
+        if (padding <= 0)
+            return (text);
+        return (" ".repeat(padding / 2)
+                + text
+                + " ".repeat(padding - padding / 2));
+    }
+
     public static String formatRow(Object... values)
     {
         StringBuilder row;
 
         row = new StringBuilder();
         for (Object value : values)
-            row.append("%-15s".formatted(value));
+        {
+            if (value != null)
+                row.append("| ").append(center(value, 13)).append(" ");
+        }
+        row.append("|");
         return (row.toString());
     }
 }

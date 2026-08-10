@@ -1,27 +1,26 @@
 package baytalhekma.models.members;
 
-import baytalhekma.enums.MembershipType;
+import static utils.ConsoleUtils.*;
+import utils.Validator;
 
-public class Member {
+public class Member
+{
     private String name;
     private final String membershipId;
-    private final MembershipType membershipType;
     private double balanceOwed;
     private int itemsHeld;
 
-    public Member(String name, String membershipId, MembershipType membershipType)
+    public Member(String name, String membershipId)
     {
-        this(name, membershipId, membershipType, 0.0, 0);
+        this(name, membershipId, 0.0, 0);
     }
 
-    public Member(String name, String membershipId, MembershipType membershipType,
+    public Member(String name, String membershipId,
             double balanceOwed, int itemsHeld)
     {
         this.name = Validator.validateString(name, "Name", false);
         this.membershipId = Validator.validateAlphanumeric(
                 membershipId, "Membership ID", 4, 4);
-        this.membershipType = Validator.validateNotNull(
-                membershipType, "Membership type");
         this.balanceOwed = Validator.validateNonNegative(
                 balanceOwed, "Balance owed");
         this.itemsHeld = Validator.validateInRange(
@@ -36,11 +35,6 @@ public class Member {
     public String getMembershipId()
     {
         return (membershipId);
-    }
-
-    public MembershipType getMembershipType()
-    {
-        return (membershipType);
     }
 
     public double getBalanceOwed()
@@ -64,13 +58,13 @@ public class Member {
         balanceOwed += amount;
     }
 
-    public boolean payFine(double amount)
+    public void payFine(double amount)
     {
         amount = Validator.validatePositive(amount, "Payment amount");
         if (amount > balanceOwed)
-            return (false);
+            throw new IllegalArgumentException(
+                    "Payment amount cannot exceed balance owed.");
         balanceOwed -= amount;
-        return (true);
     }
 
     public boolean canBorrow()
@@ -105,7 +99,7 @@ public class Member {
         StringBuilder info;
 
         info = new StringBuilder();
-        info.append("  Member | %s%n".formatted(membershipType));
+        info.append("  Member%n");
         info.append(separator());
         info.append(fieldLine("Name", name));
         info.append(fieldLine("Membership ID", membershipId));
@@ -113,6 +107,5 @@ public class Member {
         info.append(fieldLine("Balance Owed", money(balanceOwed) + " EGP"));
         return (info.toString());
     }
-
 }
 

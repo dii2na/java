@@ -18,7 +18,7 @@ public class Member
     public Member(String name, String membershipId,
             double balanceOwed, int itemsHeld)
     {
-        this.name = Validator.validateString(name, "Name", false);
+        this.name = Validator.validateLetters(name, "Name", 2, 50);
         this.membershipId = Validator.validateAlphanumeric(
                 membershipId, "Membership ID", 4, 4);
         this.balanceOwed = Validator.validateNonNegative(

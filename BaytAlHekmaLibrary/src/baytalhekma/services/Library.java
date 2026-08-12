@@ -4,6 +4,7 @@ import baytalhekma.models.items.LibraryItem;
 import baytalhekma.models.members.Member;
 import baytalhekma.enums.ItemStatus;
 import baytalhekma.interfaces.Renewable;
+import baytalhekma.models.results.ReturnBreakdown;
 import utils.Validator;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -167,7 +168,7 @@ public class Library
         return (total);
     }
 
-    public void lendItem(int catalogueId, String membershipId)
+    public LibraryItem lendItem(int catalogueId, String membershipId)
     {
         LibraryItem item;
         Member member;
@@ -181,25 +182,46 @@ public class Library
                     "Item is not available for borrowing.");
         member.recordBorrowing();
         item.lendToMember(member.getName(), member.getMembershipId());
+        return (item);
     }
 
-    public void returnItem(int catalogueId, int overdueDays)
+    private ReturnBreakdown calculateReturnBreakdown(
+        LibraryItem item,
+        int overdueDays)
+    {
+        double baseFine;
+        double totalFine;
+        double administrativeCharge;
+
+        baseFine = item.calculateItemFine(overdueDays);
+        totalFine = item.calculateFine(overdueDays);
+        administrativeCharge = totalFine - baseFine;
+
+        return new ReturnBreakdown(
+            baseFine,
+            administrativeCharge,
+            totalFine);
+    }
+
+    public ReturnBreakdown returnItem(int catalogueId, int overdueDays)
     {
         LibraryItem item;
         Member member;
-        double fine;
+        ReturnBreakdown breakdown;
 
         item = Validator.validateNotNull(findItemById(catalogueId), "Library item");
         if (!item.isOnLoan())
             throw new IllegalStateException("Item is not currently on loan");
         member = Validator.validateNotNull(findMemberById(item.getBorrowerId()), "Member");
-        fine = item.calculateFine(overdueDays);
-        member.chargeFine(fine);
+        breakdown = calculateReturnBreakdown(item, overdueDays);
+        member.chargeFine(breakdown.getTotalFine());
+        breakdown.setNewBalance(member.getBalanceOwed());
         member.recordReturn();
         item.returnItem();
+        return (breakdown);
     }
 
-    public void renewItem(int catalogueId)
+    public int renewItem(int catalogueId)
     {
         LibraryItem item;
         Renewable renewable;
@@ -213,15 +235,17 @@ public class Library
         if (!renewable.renew())
             throw new IllegalStateException(
                     "Item cannot be renewed. It may not be on loan or may have reached its renewal limit.");
+        return (renewable.getRenewalLimit() - item.getRenewalCount());
     }
 
-    public void payFine(String membershipId, double amount)
+    public int payFine(String membershipId, double amount)
     {
         Member member;
 
         member = Validator.validateNotNull(
                 findMemberById(membershipId), "Member");
         member.payFine(amount);
+        return (member.getBalanceOwed());
     }
 
     public String getLibraryReport()

@@ -1,14 +1,17 @@
 package baytalhekma.models.results;
 
-import utils.Validator;
+import baytalhekma.utils.Validator;
 
 public class ReturnBreakdown
 {
+    // Fields
+
     private final double baseFine;
     private final double administrativeCharge;
     private final double totalFine;
     private double newBalance;
 
+    // Constructors
 
     public ReturnBreakdown(
             double baseFine,
@@ -22,6 +25,8 @@ public class ReturnBreakdown
         this.totalFine = Validator.validateNonNegative(
                 totalFine, "Total fine");
     }
+
+    // Getters and Setters
 
     public double getBaseFine()
     {

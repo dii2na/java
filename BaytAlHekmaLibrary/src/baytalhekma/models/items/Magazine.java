@@ -2,34 +2,42 @@ package baytalhekma.models.items;
 
 import baytalhekma.enums.ItemCategory;
 import baytalhekma.interfaces.Renewable;
-import utils.Validator;
+import baytalhekma.utils.Validator;
 
 public class Magazine extends LibraryItem implements Renewable
 {
+    // Constants
+
     private static final int LOAN_PERIOD = 7;
     private static final double FINE_RATE = 3.00;
     private static final double MAX_FINE = 30.00;
     private static final int RENEWAL_LIMIT = 1;
 
-    static
-    {
-        Validator.validatePositive(LOAN_PERIOD, "LOAN_PERIOD");
-        Validator.validatePositive(FINE_RATE, "FINE_RATE");
-        Validator.validatePositive(MAX_FINE, "MAX_FINE");
-        Validator.validatePositive(RENEWAL_LIMIT, "RENEWAL_LIMIT");
-    }
+    // Fields
 
     private final int issueNumber;
 
-    public Magazine(String title, int issueNumber)
+    // Constructors
+
+    public Magazine(int catalogueId, String title, int issueNumber)
     {
-        super(title, LOAN_PERIOD, FINE_RATE, ItemCategory.MAGAZINE);
+        super(catalogueId, title);
         this.issueNumber = Validator.validatePositive(issueNumber, "Issue number");
     }
+
+    // Getters
 
     public int getIssueNumber()
     {
         return (issueNumber);
+    }
+
+    // Overrides
+
+    @Override
+    public int getLoanPeriod()
+    {
+        return (LOAN_PERIOD);
     }
 
     @Override
@@ -37,6 +45,12 @@ public class Magazine extends LibraryItem implements Renewable
     {
         Validator.validateNonNegative(overdueDays, "Overdue days");
         return (Math.min(overdueDays * FINE_RATE, MAX_FINE));
+    }
+
+    @Override
+    public ItemCategory getCategory()
+    {
+        return (ItemCategory.MAGAZINE);
     }
 
     @Override
@@ -54,6 +68,6 @@ public class Magazine extends LibraryItem implements Renewable
     @Override
     public String toString()
     {
-        return (formatItemRow(issueNumber));
+        return (formatItemRow("Issue " + issueNumber));
     }
 }

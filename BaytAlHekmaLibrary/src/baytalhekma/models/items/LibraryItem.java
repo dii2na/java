@@ -1,25 +1,19 @@
 package baytalhekma.models.items;
 
-import static utils.ConsoleUtils.*;
+import static baytalhekma.utils.ConsoleUtils.*;
 import baytalhekma.enums.ItemStatus;
 import baytalhekma.enums.ItemCategory;
-import utils.Validator;
-import java.util.ArrayList;
-import java.util.List;
-
+import baytalhekma.utils.Validator;
 
 public abstract class LibraryItem
 {
+    // Constants
 
     private static final String LIBRARY_NAME = "Bayt Al Hekma Library";
     private static final double ADMINISTRATIVE_CHARGE = 2.00;
     private static int cataloguedCount;
 
-    static
-    {
-        Validator.validateString(LIBRARY_NAME, "LIBRARY_NAME", false);
-        Validator.validatePositive(ADMINISTRATIVE_CHARGE, "ADMINISTRATIVE_CHARGE");
-    }
+    // Fields
 
     private final int catalogueId;
     private final String title;
@@ -27,21 +21,20 @@ public abstract class LibraryItem
     private String borrowerName;
     private String borrowerId;
     private int renewalCount;
-    private final int loanPeriod;
-    private final double fineRate;
-    private final ItemCategory category;
 
-    public LibraryItem(String title, int loanPeriod, double fineRate, ItemCategory category)
+    // Constructors
+
+    public LibraryItem(int catalogueId, String title)
     {
+        this.catalogueId = Validator.validatePositive(catalogueId, "Catalogue ID");
         this.title = Validator.validateString(title, "Title", false);
-        this.loanPeriod = Validator.validatePositive(loanPeriod, "Loan period");
-        this.fineRate = Validator.validatePositive(fineRate, "Fine rate");
-        this.category = Validator.validateNotNull(category, "Category");
         this.status = ItemStatus.AVAILABLE;
         this.borrowerName = null;
         this.renewalCount = 0;
-        this.catalogueId = ++cataloguedCount;
+        cataloguedCount++;
     }
+
+    // Getters
 
     public static String getLibraryName()
     {
@@ -88,20 +81,15 @@ public abstract class LibraryItem
         return (renewalCount);
     }
 
-    public int getLoanPeriod()
-    {
-        return (loanPeriod);
-    }
+    // Abstract Methods
 
-    public double getFineRate()
-    {
-        return (fineRate);
-    }
+    public abstract int getLoanPeriod();
 
-    public ItemCategory getCategory()
-    {
-        return (category);
-    }
+    public abstract double calculateItemFine(int overdueDays);
+
+    public abstract ItemCategory getCategory();
+
+    // Status Management
 
     private void changeStatus(ItemStatus status)
     {
@@ -138,6 +126,8 @@ public abstract class LibraryItem
         return (hasStatus(ItemStatus.AVAILABLE));
     }
 
+    // Borrowing and Returns
+
     public final void returnItem()
     {
         if (!isOnLoan())
@@ -157,6 +147,8 @@ public abstract class LibraryItem
         changeStatus(ItemStatus.ON_LOAN);
     }
 
+    // Renewal Support
+
     protected boolean canRenew(int renewalLimit)
     {
         return (isOnLoan() && renewalCount < renewalLimit);
@@ -170,11 +162,7 @@ public abstract class LibraryItem
         return (true);
     }
 
-    public double calculateItemFine(int overdueDays)
-    {
-        Validator.validateNonNegative(overdueDays, "Overdue days");
-        return (overdueDays * fineRate);
-    }
+    // Fines
 
     public double calculateFine(int overdueDays)
     {
@@ -184,26 +172,24 @@ public abstract class LibraryItem
         return (ADMINISTRATIVE_CHARGE + calculateItemFine(overdueDays));
     }
 
-    protected String formatItemRow(Object... extraValues)
-    {
-        List<Object> values;
+    // Display
 
-        values = new ArrayList<>(List.of(
+    protected String formatItemRow(String details)
+    {
+        return (formatRow(
                 catalogueId,
+                getCategory(),
                 title,
-                category,
                 status,
                 borrowerName == null ? "None" : borrowerName,
-                loanPeriod + " days",
-                money(calculateFine(1))
-        ));
-        values.addAll(List.of(extraValues));
-        return (formatRow(values.toArray()));
+                getLoanPeriod() + " days",
+                money(calculateFine(1)),
+                details));
     }
 
     @Override
     public String toString()
     {
-        return (formatItemRow());
+        return (formatItemRow("—"));
     }
 }

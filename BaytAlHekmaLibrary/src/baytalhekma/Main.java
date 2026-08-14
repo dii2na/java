@@ -5,12 +5,20 @@ import baytalhekma.utils.InputReader;
 import baytalhekma.utils.Validator;
 import baytalhekma.services.Library;
 import baytalhekma.models.results.ReturnBreakdown;
+import baytalhekma.models.members.Member;
 import baytalhekma.enums.ItemStatus;
-import baytalhekma.models.items.LibraryItem;
+import baytalhekma.models.items.*;
 import java.util.Scanner;
 
 public class Main
 {
+    // Constants
+
+    private static final int EXIT_CHOICE = 0;
+    private static final int MENU_OPTION_COUNT = 10;
+
+    // Menu Helpers
+
     private static void displayWelcome()
     {
         println(sectionTitle("Welcome to Bayt Al Hekma Library"));
@@ -18,22 +26,27 @@ public class Main
 
     private static void displayMenu()
     {
-        println("""
-                
-                BAYT AL HEKMA LIBRARY
-                
-                1. View Catalogue
-                2. Register Member
-                3. Borrow Item
-                4. Return Item
-                5. Renew Loan
-                6. Search Item by ID
-                7. View Items by Status
-                8. Pay Outstanding Fines
-                9. View All Members
-                10. Library Report
-                0. Exit
-                """);
+        String[] options;
+        int index;
+
+        options = new String[] {
+                "View Catalogue",
+                "Register Member",
+                "Borrow Item",
+                "Return Item",
+                "Renew Loan",
+                "Search Item by ID",
+                "View Items by Status",
+                "Pay Outstanding Fines",
+                "View All Members",
+                "Library Report"
+        };
+        println();
+        println(sectionTitle("BAYT AL HEKMA LIBRARY"));
+        for (index = 0; index < options.length; index++)
+            println("  %2d.  %s".formatted(index + 1, options[index]));
+        println("  %2d.  %s".formatted(0, "Exit"));
+        println();
     }
 
     private static boolean shouldExit(Scanner scanner)
@@ -46,7 +59,7 @@ public class Main
             input = scanner.nextLine().trim().toLowerCase();
             if (input.isEmpty())
             {
-                println("Invalid input.");
+                printInvalidInput("Please enter y or n.");
                 continue;
             }
             switch (input.charAt(0))
@@ -56,10 +69,55 @@ public class Main
                     println("Goodbye!");
                     return true;
                 }
-                case 'n' -> return false;
-                default -> println("Invalid input. Please enter y or n.");
+                case 'n' -> { return false; }
+                default -> printInvalidInput("Please enter y or n.");
             }
         }
+    }
+
+    // Shared Input Helpers
+
+    private static String readName(Scanner scanner)
+    {
+        return (InputReader.readValidatedString(
+                scanner,
+                "Name",
+                value -> Validator.validateLetters(
+                        value,
+                        "Name",
+                        Member.MIN_NAME_LENGTH,
+                        Member.MAX_NAME_LENGTH)));
+    }
+
+    private static String readMembershipId(Scanner scanner)
+    {
+        return (InputReader.readValidatedString(
+                scanner,
+                "Membership ID",
+                value -> Validator.validateAlphanumeric(
+                        value,
+                        "Membership ID",
+                        Member.MEMBERSHIP_ID_LENGTH,
+                        Member.MEMBERSHIP_ID_LENGTH)));
+    }
+
+    private static int readCatalogueId(Scanner scanner)
+    {
+        return (InputReader.readIntPositive(scanner, "Catalogue ID"));
+    }
+
+    private static ItemStatus readItemStatus(Scanner scanner)
+    {
+        return (InputReader.readEnum(
+                scanner,
+                "Choose item status:",
+                ItemStatus.values()));
+    }
+
+    private static int readMenuChoice(Scanner scanner)
+    {
+        return (InputReader.readIntInRange(
+                scanner, "Choice", EXIT_CHOICE, MENU_OPTION_COUNT));
     }
 
     // Registration
@@ -68,28 +126,17 @@ public class Main
     {
         String name;
         String membershipId;
-        MembershipType membershipType;
         Member member;
 
-        name = InputReader.readValidatedString(
-                scanner,
-                "Name",
-                value -> Validator.validateLetters(value, "Name", 2, 50));
-        membershipId = InputReader.readValidatedString(
-                scanner,
-                "Membership ID",
-                value -> Validator.validateAlphanumeric(
-                        value, "Membership ID", 1, 20));
-        membershipType = InputReader.readEnum(
-                scanner,
-                "Choose membership type:",
-                MembershipType.values());
-        member = new Member(name, membershipId, membershipType);
+        name = readName(scanner);
+        membershipId = readMembershipId(scanner);
+        member = new Member(name, membershipId);
         library.registerMember(member);
         println("Member registered successfully." + newLine());
         print(member);
     }
 
+    // Loan Operations
 
     private static void borrowItem(Scanner scanner, Library library)
     {
@@ -97,19 +144,68 @@ public class Main
         String membershipId;
         LibraryItem item;
 
-        catalogueId = InputReader.readIntPositive(
-                scanner, "catalogue ID");
-        membershipId = InputReader.readValidatedString(
-                scanner,
-                "Membership ID",
-                value -> Validator.validateAlphanumeric(
-                        value, "Membership ID", 1, 20));
+        catalogueId = readCatalogueId(scanner);
+        membershipId = readMembershipId(scanner);
         item = library.lendItem(catalogueId, membershipId);
         println("Item borrowed successfully.");
         println("Loan period: " + item.getLoanPeriod() + " days.");
     }
 
+    private static void returnItem(Scanner scanner, Library library)
+    {
+        int catalogueId;
+        int overdueDays;
+        ReturnBreakdown breakdown;
+
+        catalogueId = readCatalogueId(scanner);
+        overdueDays = InputReader.readIntNonNegative(scanner, "Overdue days");
+        breakdown = library.returnItem(catalogueId, overdueDays);
+        println(sectionTitle("Return Successful"));
+        println(fieldLine("Base Fine", money(breakdown.getBaseFine()) + " EGP"));
+        println(fieldLine("Administrative Charge", money(breakdown.getAdministrativeCharge()) + " EGP"));
+        println(fieldLine("Total Fine", money(breakdown.getTotalFine()) + " EGP"));
+        println(fieldLine("New Balance", money(breakdown.getNewBalance()) + " EGP"));
+    }
+
+    private static void renewItem(Scanner scanner, Library library)
+    {
+        int catalogueId;
+        int remainingRenewals;
+
+        catalogueId = readCatalogueId(scanner);
+        remainingRenewals = library.renewItem(catalogueId);
+        println("Loan renewed successfully.");
+        println("Renewals remaining: " + remainingRenewals + ".");
+    }
+
+    private static void payFine(Scanner scanner, Library library)
+    {
+        String membershipId;
+        double amount;
+        double newBalance;
+
+        membershipId = readMembershipId(scanner);
+        amount = InputReader.readDoublePositive(scanner, "Payment amount");
+        newBalance = library.payFine(membershipId, amount);
+        println("Payment successful.");
+        println("New balance: " + money(newBalance) + " EGP");
+    }
+
     // Display Operations
+
+    private static void printCatalogueHeader()
+    {
+        println(formatRow(
+                "ID", "Category", "Title", "Status",
+                "Borrower", "Loan", "Fine", "Details"));
+    }
+
+    private static void displayItemList(String title, LibraryItem[] items)
+    {
+        println(sectionTitle(title));
+        printCatalogueHeader();
+        printList(items);
+    }
 
     private static void viewCatalogue(Library library)
     {
@@ -121,37 +217,7 @@ public class Main
             println("No items found.");
             return;
         }
-        println(sectionTitle("Library Catalogue"));
-        printList(items);
-    }
-
-    private static void returnItem(Scanner scanner, Library library)
-    {
-        int catalogueId;
-        int overdueDays;
-        ReturnBreakdown breakdown;
-
-        catalogueId = InputReader.readIntPositive(
-                scanner, "catalogue ID");
-        overdueDays = InputReader.readIntNonNegative(
-                scanner, "overdue days");
-        breakdown = library.returnItem(catalogueId, overdueDays);
-        println(sectionTitle("Return Successful"));
-        println(fieldLine("Base Fine", money(breakdown.getBaseFine()) + " EGP"));
-        println(fieldLine("Administrative Charge",money(breakdown.getAdministrativeCharge()) + " EGP"));
-        println(fieldLine("Total Fine", money(breakdown.getTotalFine()) + " EGP"));
-        println(fieldLine("New Balance", money(breakdown.getNewBalance()) + " EGP"));
-    }
-
-    private static void renewItem(Scanner scanner, Library library)
-    {
-        int catalogueId;
-        int remainingRenewals;
-
-        catalogueId = InputReader.readIntPositive(scanner, "catalogue ID");
-        remainingRenewals = library.renewItem(catalogueId);
-        println("Loan renewed successfully.");
-        println("Renewals remaining: " + remainingRenewals);
+        displayItemList("Library Catalogue", items);
     }
 
     private static void searchItem(Scanner scanner, Library library)
@@ -159,14 +225,16 @@ public class Main
         int catalogueId;
         LibraryItem item;
 
-        catalogueId = InputReader.readIntPositive(scanner, "catalogue ID");
+        catalogueId = readCatalogueId(scanner);
         item = library.findItemById(catalogueId);
         if (item == null)
         {
             println("Item not found.");
             return;
         }
-        print(item);
+        println(sectionTitle("Search Result"));
+        printCatalogueHeader();
+        println(item);
     }
 
     private static void viewItemsByStatus(
@@ -176,34 +244,14 @@ public class Main
         ItemStatus status;
         LibraryItem[] items;
 
-        status = InputReader.readEnum(
-                scanner,
-                "Choose item status:",
-                ItemStatus.values());
+        status = readItemStatus(scanner);
         items = library.getItemsByStatus(status);
         if (items.length == 0)
         {
             println("No items found with status: " + status);
             return;
         }
-        printList(items);
-    }
-
-    private static void payFine(Scanner scanner, Library library)
-    {
-        String membershipId;
-        double amount;
-        double newBalance;
-
-        membershipId = InputReader.readValidatedString(
-                scanner,
-                "membership ID",
-                value -> Validator.validateAlphanumeric(
-                        value, "Membership ID", 1, 20));
-        amount = InputReader.readDoublePositive(scanner, "payment amount");
-        newBalance = library.payFine(membershipId, amount);
-        println("Payment successful.");
-        println("New balance: " + money(newBalance) + " EGP");
+        displayItemList("Items with Status: " + status, items);
     }
 
     private static void viewAllMembers(Library library)
@@ -230,17 +278,17 @@ public class Main
         int choice;
 
         running = true;
+        seedLibrary(library);
         displayWelcome();
         while (running)
         {
             displayMenu();
-
             try
             {
-                choice = InputReader.readIntNonNegative(scanner, "choice");
+                choice = readMenuChoice(scanner);
                 switch (choice)
                 {
-                    case 0 -> running = !shouldExit(scanner);
+                    case EXIT_CHOICE -> running = !shouldExit(scanner);
                     case 1 -> viewCatalogue(library);
                     case 2 -> registerMember(scanner, library);
                     case 3 -> borrowItem(scanner, library);
@@ -256,10 +304,37 @@ public class Main
             }
             catch (IllegalArgumentException | IllegalStateException e)
             {
-                println(e.getMessage() != null ? e.getMessage() : e.toString());
+                println("Error: " + (e.getMessage() != null ? e.getMessage() : e.toString()));
             }
         }
     }
+
+    // Sample Data
+
+    private static void seedLibrary(Library library)
+    {
+        LibraryItem[] items;
+        Member[] members;
+
+        items = new LibraryItem[] {
+                new Book(1, "Clean Code", "Robert C. Martin", 464),
+                new Book(2, "The Pragmatic Programmer", "David Thomas", 352),
+                new Magazine(3, "National Geographic", 241),
+                new Magazine(4, "Scientific American", 320),
+                new DVD(5, "The Matrix", 136),
+                new DVD(6, "Interstellar", 169)
+        };
+        for (LibraryItem item : items)
+            library.registerItem(item);
+        members = new Member[] {
+                new Member("Amr Hassan", "M001"),
+                new Member("Sara Ali", "M002"),
+                new Member("Ahmed Omar", "M003", 40.00, 0)
+        };
+        for (Member member : members)
+            library.registerMember(member);
+    }
+
     // Entry Point
 
     public static void main(String[] args)

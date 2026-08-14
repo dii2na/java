@@ -1,6 +1,4 @@
-package utils;
-
-import static utils.ConsoleUtils.*;
+package baytalhekma.utils;
 
 public class Validator
 {
@@ -49,31 +47,6 @@ public class Validator
         return (value);
     }
 
-    public static double validateInRange(
-            double value,
-            double min,
-            double max,
-            String fieldName)
-    {
-        if (value < min || value > max)
-        {
-            throw new IllegalArgumentException(
-                    fieldName + " must be between " + min + " and " + max);
-        }
-
-        return (value);
-    }
-
-    public static double validateMinimum(double value, double minimum, String fieldName)
-    {
-        if (value < minimum)
-        {
-            throw new IllegalArgumentException(
-                    fieldName + " must be at least " + money(minimum));
-        }
-        return (value);
-    }
-
     // String Validation
 
     public static String validateString(String value, String fieldName, boolean optional)
@@ -104,26 +77,6 @@ public class Validator
             throw new IllegalArgumentException(
                     fieldName + " must contain only letters and digits");
         return (value);
-    }
-
-    public static String validateNumeric(String value, String fieldName,
-                                         int minLength, int maxLength)
-    {
-        validateString(value, fieldName, false);
-        value = validateLength(value, fieldName, minLength, maxLength);
-        if (!value.matches("[+-]?\\d+"))
-            throw new IllegalArgumentException(
-                    fieldName + " must contain only digits");
-        return (value);
-    }
-
-    public static String validateOptionalNumeric(String value, String fieldName,
-                                                 int minLength, int maxLength)
-    {
-        value = validateString(value, fieldName, true);
-        if (value.isBlank())
-            return (value);
-        return (validateNumeric(value, fieldName, minLength, maxLength));
     }
 
     public static String validateLetters(String value, String fieldName,

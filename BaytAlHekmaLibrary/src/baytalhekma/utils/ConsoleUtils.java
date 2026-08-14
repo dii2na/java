@@ -1,11 +1,16 @@
-package utils;
+package baytalhekma.utils;
 
 public final class ConsoleUtils
 {
+    // Constants
+
     public static final String SEPARATOR = "----------------------------------------------------";
     public static final String DOUBLE_SEPARATOR = "====================================================";
 
-    private static final int LABEL_WIDTH = 22;
+    private static final int LABEL_WIDTH = 25;
+    private static final int[] COLUMN_WIDTHS = { 3, 8, 24, 9, 12, 7, 5, 27 };
+
+    // Constructors
 
     private ConsoleUtils() {}
 
@@ -38,24 +43,20 @@ public final class ConsoleUtils
 
     public static void printList(Object[] items)
     {
-        for (int i = 0; i < items.length; i++)
-        {
-            print(items[i]);
-            if (i < items.length - 1)
-                println();
-        }
+        for (Object item : items)
+            println(item);
     }
 
-    // Structural Output
-
-    public static void printSeparator()
-    {
-        print(separator());
-    }
+    // Section Headings
 
     public static String separator()
     {
         return ("  " + SEPARATOR + newLine());
+    }
+
+    public static String sectionTitle(String title)
+    {
+        return ("%s%n  %s%n%s%n".formatted(DOUBLE_SEPARATOR, title, DOUBLE_SEPARATOR));
     }
 
     // Formatting
@@ -75,46 +76,35 @@ public final class ConsoleUtils
         return ("%.2f%%".formatted(value));
     }
 
-    public static String percent(double fraction)
+    private static String truncate(String text, int width)
     {
-        return (percentage(fraction * 100));
+        if (width <= 1)
+            return (text.substring(0, Math.min(text.length(), width)));
+        return (text.substring(0, width - 1) + "…");
     }
 
-    public static String yesNo(boolean value)
-    {
-        return (value ? "Yes" : "No");
-    }
-
-    public static String sectionTitle(String title)
-    {
-        return ("%s%n  %s%n%s%n".formatted(DOUBLE_SEPARATOR, title, DOUBLE_SEPARATOR));
-    }
-
-    private static String center(Object value, int width)
+    private static String pad(Object value, int width)
     {
         String text;
-        int padding;
 
         text = String.valueOf(value);
-        padding = width - text.length();
-        if (padding <= 0)
-            return (text);
-        return (" ".repeat(padding / 2)
-                + text
-                + " ".repeat(padding - padding / 2));
+        if (text.length() > width)
+            return (truncate(text, width));
+        return (text + " ".repeat(width - text.length()));
     }
 
     public static String formatRow(Object... values)
     {
         StringBuilder row;
+        int i;
 
         row = new StringBuilder();
-        for (Object value : values)
+        for (i = 0; i < values.length; i++)
         {
-            if (value != null)
-                row.append("| ").append(center(value, 13)).append(" ");
+            row.append("| ").append(pad(values[i], COLUMN_WIDTHS[i])).append(" ");
+            if (i == values.length - 1)
+                row.append("|");
         }
-        row.append("|");
         return (row.toString());
     }
 }

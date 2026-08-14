@@ -1,14 +1,32 @@
-package utils;
+package baytalhekma.utils;
 
-import static utils.ConsoleUtils.*;
+import static baytalhekma.utils.ConsoleUtils.*;
 
 import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 
 public class InputReader
 {
     // Integer Input
+
+    private static int readIntUntil(
+            Scanner scanner,
+            String prompt,
+            IntPredicate condition,
+            String errorMessage)
+    {
+        int num;
+
+        while (true)
+        {
+            num = readInt(scanner, prompt);
+            if (condition.test(num))
+                return (num);
+            printInvalidInput(errorMessage);
+        }
+    }
 
     public static int readInt(Scanner scanner, String prompt)
     {
@@ -33,41 +51,29 @@ public class InputReader
 
     public static int readIntPositive(Scanner scanner, String prompt)
     {
-        int num;
-
-        while (true)
-        {
-            num = readInt(scanner, prompt);
-            if (num > 0)
-                return (num);
-            printInvalidInput(prompt + " must be positive.");
-        }
+        return (readIntUntil(
+                scanner,
+                prompt,
+                value -> value > 0,
+                prompt + " must be positive."));
     }
 
     public static int readIntInRange(Scanner scanner, String prompt, int min, int max)
     {
-        int num;
-
-        while (true)
-        {
-            num = readInt(scanner, prompt);
-            if (num >= min && num <= max)
-                return (num);
-            printInvalidInput(prompt + " must be between " + min + " and " + max + ".");
-        }
+        return (readIntUntil(
+                scanner,
+                prompt,
+                value -> value >= min && value <= max,
+                prompt + " must be between " + min + " and " + max + "."));
     }
 
     public static int readIntNonNegative(Scanner scanner, String prompt)
     {
-        int num;
-
-        while (true)
-        {
-            num = readInt(scanner, prompt);
-            if (num >= 0)
-                return (num);
-            printInvalidInput(prompt + " cannot be negative.");
-        }
+        return (readIntUntil(
+                scanner,
+                prompt,
+                value -> value >= 0,
+                prompt + " cannot be negative."));
     }
 
     // Double Input
@@ -103,19 +109,6 @@ public class InputReader
             if (num > 0)
                 return (num);
             printInvalidInput(prompt + " must be positive.");
-        }
-    }
-
-    public static double readDoubleNonNegative(Scanner scanner, String prompt)
-    {
-        double num;
-
-        while (true)
-        {
-            num = readDouble(scanner, prompt);
-            if (num >= 0)
-                return (num);
-            printInvalidInput(prompt + " cannot be negative.");
         }
     }
 
@@ -163,9 +156,9 @@ public class InputReader
         println(prompt);
         for (int i = 0; i < values.length; i++)
         {
-            println((i + 1) + ". " + values[i]);
+            println("  %2d.  %s".formatted(i + 1, values[i]));
         }
-        choice = readIntInRange(scanner, "choice", 1, values.length);
+        choice = readIntInRange(scanner, "Choice", 1, values.length);
         return (values[choice - 1]);
     }
 }

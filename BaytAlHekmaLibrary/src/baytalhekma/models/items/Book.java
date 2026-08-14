@@ -2,30 +2,31 @@ package baytalhekma.models.items;
 
 import baytalhekma.enums.ItemCategory;
 import baytalhekma.interfaces.Renewable;
-import utils.Validator;
+import baytalhekma.utils.Validator;
 
 public class Book extends LibraryItem implements Renewable
 {
+    // Constants
+
     private static final int LOAN_PERIOD = 14;
     private static final double FINE_RATE = 5.00;
     private static final int RENEWAL_LIMIT = 2;
 
-    static
-    {
-        Validator.validatePositive(LOAN_PERIOD, "LOAN_PERIOD");
-        Validator.validatePositive(FINE_RATE, "FINE_RATE");
-        Validator.validatePositive(RENEWAL_LIMIT, "RENEWAL_LIMIT");
-    }
+    // Fields
 
     private final String author;
     private final int pageCount;
 
-    public Book(String title, String author, int pageCount)
+    // Constructors
+
+    public Book(int catalogueId, String title, String author, int pageCount)
     {
-        super(title, LOAN_PERIOD, FINE_RATE, ItemCategory.BOOK);
+        super(catalogueId, title);
         this.author = Validator.validateString(author, "Author", false);
         this.pageCount = Validator.validatePositive(pageCount, "Page count");
     }
+
+    // Getters
 
     public String getAuthor()
     {
@@ -35,6 +36,27 @@ public class Book extends LibraryItem implements Renewable
     public int getPageCount()
     {
         return (pageCount);
+    }
+
+    // Overrides
+
+    @Override
+    public int getLoanPeriod()
+    {
+        return (LOAN_PERIOD);
+    }
+
+    @Override
+    public double calculateItemFine(int overdueDays)
+    {
+        Validator.validateNonNegative(overdueDays, "Overdue days");
+        return (overdueDays * FINE_RATE);
+    }
+
+    @Override
+    public ItemCategory getCategory()
+    {
+        return (ItemCategory.BOOK);
     }
 
     @Override
@@ -52,6 +74,6 @@ public class Book extends LibraryItem implements Renewable
     @Override
     public String toString()
     {
-        return (formatItemRow(author, pageCount));
+        return (formatItemRow(author + ", " + pageCount + " pages"));
     }
 }

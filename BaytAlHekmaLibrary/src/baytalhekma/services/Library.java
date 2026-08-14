@@ -1,32 +1,32 @@
 package baytalhekma.services;
 
+import static baytalhekma.utils.ConsoleUtils.*;
 import baytalhekma.models.items.LibraryItem;
 import baytalhekma.models.members.Member;
 import baytalhekma.enums.ItemStatus;
 import baytalhekma.interfaces.Renewable;
 import baytalhekma.models.results.ReturnBreakdown;
-import utils.Validator;
+import baytalhekma.utils.Validator;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Library
 {
+    // Constants
+
     private static final int MAX_CATALOGUE_SIZE = 100;
     private static final int MAX_MEMBER_COUNT = 100;
     private static final int REPORT_OVERDUE_DAYS = 5;
 
-    static
-    {
-        Validator.validatePositive(MAX_CATALOGUE_SIZE, "MAX_CATALOGUE_SIZE");
-        Validator.validatePositive(MAX_MEMBER_COUNT, "MAX_MEMBER_COUNT");
-        Validator.validatePositive(REPORT_OVERDUE_DAYS, "REPORT_OVERDUE_DAYS");
-    }
+    // Fields
 
     private final LibraryItem[] catalogue;
     private final Member[] members;
     private int catalogueCount;
     private int memberCount;
+
+    // Constructors
 
     public Library()
     {
@@ -35,6 +35,8 @@ public class Library
         catalogueCount = 0;
         memberCount = 0;
     }
+
+    // Catalogue Registration
 
     private void checkCatalogueCapacity()
     {
@@ -58,6 +60,32 @@ public class Library
         return (null);
     }
 
+    private LibraryItem requireItem(int catalogueId)
+    {
+        LibraryItem item;
+
+        item = findItemById(catalogueId);
+        if (item == null)
+        {
+            throw new IllegalArgumentException(
+                    "No item found with catalogue ID " + catalogueId + ".");
+        }
+        return (item);
+    }
+
+    private Member requireMember(String membershipId)
+    {
+        Member member;
+
+        member = findMemberById(membershipId);
+        if (member == null)
+        {
+            throw new IllegalArgumentException(
+                    "No member found with membership ID " + membershipId + ".");
+        }
+        return (member);
+    }
+
     public void registerItem(LibraryItem item)
     {
         Validator.validateNotNull(item, "Library item");
@@ -66,6 +94,8 @@ public class Library
         catalogue[catalogueCount] = item;
         catalogueCount++;
     }
+
+    // Member Registration
 
     private void checkMemberCapacity()
     {
@@ -99,6 +129,8 @@ public class Library
         memberCount++;
     }
 
+    // Listings
+
     public LibraryItem[] getCatalogue()
     {
         return (Arrays.copyOf(catalogue, catalogueCount));
@@ -122,6 +154,8 @@ public class Library
     {
         return (Arrays.copyOf(members, memberCount));
     }
+
+    // Statistics
 
     public int getItemsOnLoanCount()
     {
@@ -168,15 +202,15 @@ public class Library
         return (total);
     }
 
+    // Borrowing
+
     public LibraryItem lendItem(int catalogueId, String membershipId)
     {
         LibraryItem item;
         Member member;
 
-        item = Validator.validateNotNull(
-                findItemById(catalogueId), "Library item");
-        member = Validator.validateNotNull(
-                findMemberById(membershipId), "Member");
+        item = requireItem(catalogueId);
+        member = requireMember(membershipId);
         if (!item.isAvailable())
             throw new IllegalStateException(
                     "Item is not available for borrowing.");
@@ -184,6 +218,8 @@ public class Library
         item.lendToMember(member.getName(), member.getMembershipId());
         return (item);
     }
+
+    // Returns
 
     private ReturnBreakdown calculateReturnBreakdown(
         LibraryItem item,
@@ -209,25 +245,27 @@ public class Library
         Member member;
         ReturnBreakdown breakdown;
 
-        item = Validator.validateNotNull(findItemById(catalogueId), "Library item");
+        item = requireItem(catalogueId);
         if (!item.isOnLoan())
             throw new IllegalStateException("Item is not currently on loan");
-        member = Validator.validateNotNull(findMemberById(item.getBorrowerId()), "Member");
+        member = requireMember(item.getBorrowerId());
         breakdown = calculateReturnBreakdown(item, overdueDays);
-        member.chargeFine(breakdown.getTotalFine());
+        if (breakdown.getTotalFine() > 0)
+            member.chargeFine(breakdown.getTotalFine());
         breakdown.setNewBalance(member.getBalanceOwed());
         member.recordReturn();
         item.returnItem();
         return (breakdown);
     }
 
+    // Renewals
+
     public int renewItem(int catalogueId)
     {
         LibraryItem item;
         Renewable renewable;
 
-        item = Validator.validateNotNull(
-                findItemById(catalogueId), "Library item");
+        item = requireItem(catalogueId);
         if (!(item instanceof Renewable))
             throw new IllegalStateException(
                     "This item type cannot be renewed.");
@@ -238,15 +276,18 @@ public class Library
         return (renewable.getRenewalLimit() - item.getRenewalCount());
     }
 
-    public int payFine(String membershipId, double amount)
+    // Payments
+
+    public double payFine(String membershipId, double amount)
     {
         Member member;
 
-        member = Validator.validateNotNull(
-                findMemberById(membershipId), "Member");
+        member = requireMember(membershipId);
         member.payFine(amount);
         return (member.getBalanceOwed());
     }
+
+    // Report
 
     public String getLibraryReport()
     {
@@ -255,20 +296,11 @@ public class Library
         report = new StringBuilder();
         report.append(sectionTitle("Library Report"));
         report.append(fieldLine("Catalogue Size", catalogueCount));
-        report.append(fieldLine(
-                "Items Ever Catalogued",
-                LibraryItem.getCataloguedCount()));
-        report.append(fieldLine(
-                "Items On Loan",
-                getItemsOnLoanCount()));
-        report.append(fieldLine(
-                "Loan Rate",
-                percentage(getLoanRate())));
-        report.append(fieldLine(
-                "Total Outstanding",
-                money(getTotalOutstanding()) + " EGP"));
-        report.append(fieldLine(
-                "Projected Fines (" + REPORT_OVERDUE_DAYS + " days)",
+        report.append(fieldLine("Items Ever Catalogued", LibraryItem.getCataloguedCount()));
+        report.append(fieldLine("Items On Loan", getItemsOnLoanCount()));
+        report.append(fieldLine("Loan Rate", percentage(getLoanRate())));
+        report.append(fieldLine("Total Outstanding", money(getTotalOutstanding()) + " EGP"));
+        report.append(fieldLine("Projected Fines (" + REPORT_OVERDUE_DAYS + " days)",
                 money(calculateProjectedFines(REPORT_OVERDUE_DAYS)) + " EGP"));
         return (report.toString());
     }

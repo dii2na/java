@@ -1,7 +1,5 @@
 package baytalhekma.enums;
 
-import utils.Validator;
-
 public enum ItemCategory
 {
     BOOK("Book"),
@@ -12,7 +10,7 @@ public enum ItemCategory
 
     ItemCategory(String label)
     {
-        this.label = Validator.validateString(label, "Category label", false);
+        this.label = label;
     }
 
     public String getLabel()

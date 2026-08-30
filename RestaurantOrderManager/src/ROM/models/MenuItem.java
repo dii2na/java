@@ -1,7 +1,7 @@
-package restaurantordermanager.models;
+package ROM.models;
 
-import static restaurantordermanager.utils.ConsoleUtils.*;
-import restaurantordermanager.utils.Validator;
+import static ROM.utils.ConsoleUtils.*;
+import ROM.utils.Validator;
 
 public class MenuItem
 {
@@ -65,9 +65,9 @@ public class MenuItem
     public boolean equals(Object obj)
     {
         if (this == obj)
-            return true;
+            return (true);
         if (!(obj instanceof MenuItem other))
-            return false;
+            return (false);
         return (id == other.id);
     }
 
@@ -76,10 +76,9 @@ public class MenuItem
     @Override
     public String toString()
     {
-        return (formatRow(
-                id,
-                name,
-                category,
-                money(price)));
+        return ("ID: " + id +
+                " | Name: " + name +
+                " | Category: " + category +
+                " | Price: " + money(price));
     }
 }

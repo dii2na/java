@@ -1,4 +1,4 @@
-package restaurantordermanager.enums;
+package ROM.enums;
 
 public enum OrderStatus
 {

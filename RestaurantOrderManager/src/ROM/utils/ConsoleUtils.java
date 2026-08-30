@@ -1,4 +1,4 @@
-package restaurantordermanager.utils;
+package ROM.utils;
 
 public final class ConsoleUtils
 {
@@ -8,7 +8,8 @@ public final class ConsoleUtils
     public static final String DOUBLE_SEPARATOR = "====================================================";
 
     private static final int LABEL_WIDTH = 25;
-    private static final int[] COLUMN_WIDTHS = { 5, 24, 18, 10, 7, 12 };
+    private static final int MAX_COLUMN_WIDTH = 24;
+
     // Constructors
 
     private ConsoleUtils() {}
@@ -40,12 +41,6 @@ public final class ConsoleUtils
         println("Invalid input. " + message);
     }
 
-    public static void printList(Object[] items)
-    {
-        for (Object item : items)
-            println(item);
-    }
-
     // Section Headings
 
     public static String separator()
@@ -70,11 +65,6 @@ public final class ConsoleUtils
         return ("%.2f".formatted(amount));
     }
 
-    public static String percentage(double value)
-    {
-        return ("%.2f%%".formatted(value));
-    }
-
     private static String truncate(String text, int width)
     {
         if (width <= 1)
@@ -92,18 +82,57 @@ public final class ConsoleUtils
         return (text + " ".repeat(width - text.length()));
     }
 
-    public static String formatRow(Object... values)
+    public static String formatTable(String[] headers, Object[][] rows)
     {
-        StringBuilder row;
+        int columns;
+        int[] widths;
+        int i;
+        int j;
+
+        columns = (headers == null ? 0 : headers.length);
+        for (i = 0; i < rows.length; i++)
+            columns = Math.max(columns, rows[i].length);
+        if (columns == 0)
+            return ("");
+        widths = new int[columns];
+        if (headers != null)
+        {
+            for (j = 0; j < headers.length; j++)
+                widths[j] = String.valueOf(headers[j]).length();
+        }
+        for (i = 0; i < rows.length; i++)
+        {
+            for (j = 0; j < rows[i].length; j++)
+                widths[j] = Math.max(widths[j], String.valueOf(rows[i][j]).length());
+        }
+        for (j = 0; j < columns; j++)
+            widths[j] = Math.min(widths[j], MAX_COLUMN_WIDTH);
+        return (renderTable(headers, rows, widths));
+    }
+
+    private static String renderTable(String[] headers, Object[][] rows, int[] widths)
+    {
+        StringBuilder table;
         int i;
 
-        row = new StringBuilder();
-        for (i = 0; i < values.length; i++)
+        table = new StringBuilder();
+        if (headers != null)
+            appendRow(table, headers, widths);
+        for (i = 0; i < rows.length; i++)
+            appendRow(table, rows[i], widths);
+        return (table.toString());
+    }
+
+    private static void appendRow(StringBuilder table, Object[] values, int[] widths)
+    {
+        int j;
+
+        for (j = 0; j < widths.length; j++)
         {
-            row.append("| ").append(pad(values[i], COLUMN_WIDTHS[i])).append(" ");
-            if (i == values.length - 1)
-                row.append("|");
+            table.append("| ");
+            table.append(pad(j < values.length ? values[j] : "", widths[j]));
+            table.append(" ");
         }
-        return (row.toString());
+        table.append("|").append(System.lineSeparator());
     }
 }

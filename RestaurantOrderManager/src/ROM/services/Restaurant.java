@@ -1,13 +1,12 @@
-package restaurantordermanager.services;
+package ROM.services;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-
-import restaurantordermanager.models.MenuItem;
-import restaurantordermanager.models.Order;
-import restaurantordermanager.utils.Validator;
+import ROM.models.MenuItem;
+import ROM.models.Order;
+import ROM.utils.Validator;
 
 public class Restaurant
 {
@@ -35,9 +34,9 @@ public class Restaurant
         return (menu);
     }
 
-    public LinkedList<Order> getKitchenQueue()
+    public LinkedHashMap<Integer, Order> getCompletedOrders()
     {
-        return (kitchenQueue);
+        return (completedOrders);
     }
 
     public HashMap<Integer, Order> getOrders()
@@ -45,10 +44,38 @@ public class Restaurant
         return (orders);
     }
 
-    public LinkedHashMap<Integer, Order> getCompletedOrders()
+    public LinkedList<Order> getKitchenQueue()
     {
-        return (completedOrders);
+        return (kitchenQueue);
     }
+
+    // Validation Helpers
+
+    private void checkMenuItem(MenuItem item, boolean shouldExist)
+    {
+        item = Validator.validateNotNull(item, "Menu item cannot be null");
+        if (shouldExist && !menu.contains(item))
+            throw new IllegalArgumentException("Menu item not found.");
+        if (!shouldExist && menu.contains(item))
+            throw new IllegalArgumentException("Menu item already exists.");
+    }
+
+    private void checkOrder(Order order, boolean shouldExist)
+    {
+        order = Validator.validateNotNull(order, "Order cannot be null");
+        if (shouldExist && !orders.containsKey(order.getOrderId()))
+            throw new IllegalArgumentException("Order not found.");
+        if (!shouldExist && orders.containsKey(order.getOrderId()))
+            throw new IllegalArgumentException("Order already exists.");
+    }
+
+    private void checkOrderAndItem(Order order, MenuItem item)
+    {
+        checkOrder(order, true);
+        checkMenuItem(item, true);
+    }
+
+    // Menu Item Operations
 
     public MenuItem findMenuItemById(int id)
     {
@@ -58,18 +85,6 @@ public class Restaurant
                 return (item);
         }
         return (null);
-    }
-
-    private void checkMenuItem(MenuItem item, boolean shouldExist)
-    {
-        boolean exists;
-
-        item = Validator.validateNotNull(item, "Menu item cannot be null");
-        exists = menu.contains(item);
-        if (shouldExist && !exists)
-            throw new IllegalArgumentException("Menu item not found.");
-        if (!shouldExist && exists)
-            throw new IllegalArgumentException("Menu item already exists.");
     }
 
     public void addMenuItem(MenuItem item)
@@ -84,21 +99,11 @@ public class Restaurant
         menu.remove(item);
     }
 
+    // Order Operations
+
     public Order findOrderById(int id)
     {
         return (orders.get(id));
-    }
-
-    private void checkOrder(Order order, boolean shouldExist)
-    {
-        boolean exists;
-
-        order = Validator.validateNotNull(order, "Order cannot be null");
-        exists = orders.containsKey(order.getOrderId());
-        if (shouldExist && !exists)
-            throw new IllegalArgumentException("Order not found.");
-        if (!shouldExist && exists)
-            throw new IllegalArgumentException("Order already exists.");
     }
 
     public void createOrder(Order order)
@@ -109,17 +114,23 @@ public class Restaurant
 
     public void addItemToOrder(Order order, MenuItem item, int quantity)
     {
-        checkOrder(order, true);
-        checkMenuItem(item, true);
+        checkOrderAndItem(order, item);
         order.addItem(item, quantity);
     }
 
     public void removeItemFromOrder(Order order, MenuItem item)
     {
-        checkOrder(order, true);
-        checkMenuItem(item, true);
+        checkOrderAndItem(order, item);
         order.removeItem(item);
     }
+
+    public void cancelOrder(Order order)
+    {
+        checkOrder(order, true);
+        order.cancel();
+    }
+
+    // Kitchen Operations
 
     public void sendOrderToKitchen(Order order)
     {
@@ -139,11 +150,4 @@ public class Restaurant
         order.complete();
         completedOrders.put(order.getOrderId(), order);
     }
-
-    public void cancelOrder(Order order)
-    {
-        checkOrder(order, true);
-        order.cancel();
-    }
-
 }

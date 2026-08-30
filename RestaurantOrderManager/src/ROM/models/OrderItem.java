@@ -1,6 +1,7 @@
-package restaurantordermanager.models;
+package ROM.models;
 
-import restaurantordermanager.utils.Validator;
+import static ROM.utils.ConsoleUtils.*;
+import ROM.utils.Validator;
 
 public class OrderItem
 {
@@ -14,7 +15,7 @@ public class OrderItem
     public OrderItem(MenuItem item, int quantity)
     {
         this.item = Validator.validateNotNull(item, "Item cannot be null");
-        setQuantity(quantity);       
+        setQuantity(quantity);
     }
 
     // Getters
@@ -36,6 +37,7 @@ public class OrderItem
         this.quantity = Validator.validatePositive(quantity, "Quantity");
     }
 
+    // Calculations
 
     public double calculateSubtotal()
     {
@@ -54,12 +56,8 @@ public class OrderItem
     @Override
     public String toString()
     {
-        return (formatRow(
-                item.getId(),
-                item.getName(),
-                item.getCategory(),
-                money(item.getPrice()),
-                quantity,
-                money(calculateSubtotal())));
+        return (item.getName() +
+                " x" + quantity +
+                " | Subtotal: " + money(calculateSubtotal()));
     }
 }

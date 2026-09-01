@@ -1,12 +1,10 @@
 package EOM.models;
 
+import static EOM.utils.ConsoleUtils.*;
 import EOM.enums.OrderStatus;
 import EOM.utils.Validator;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static EOM.utils.ConsoleUtils.*;
 
 public class Order
 {
@@ -24,10 +22,10 @@ public class Order
     {
         this.orderId = Validator.validatePositive(orderId, "Order ID");
         this.customerName = Validator.validateString(
-            customerName, "Customer name", false);
+            customerName, "Customer name");
         this.items = new ArrayList<>();
         this.total = 0.0;
-        this.status = OrderStatus.PENDING;    
+        this.status = OrderStatus.PENDING;
     }
 
     // Getters
@@ -35,11 +33,6 @@ public class Order
     public int getOrderId()
     {
         return (orderId);
-    }
-
-    public String getCustomerName()
-    {
-        return (customerName);
     }
 
     public List<CartItem> getItems()
@@ -57,7 +50,7 @@ public class Order
         return (status);
     }
 
-    // Setters
+    // Order Status
 
     public void setStatus(OrderStatus newStatus)
     {
@@ -66,8 +59,6 @@ public class Order
         validateStatusTransition(newStatus);
         status = newStatus;
     }
-
-    // Item Management
 
     public boolean isPending()
     {
@@ -79,6 +70,20 @@ public class Order
         return (!items.isEmpty());
     }
 
+    public boolean containsProduct(int productId)
+    {
+        return (findItemById(productId) != null);
+    }
+
+    public void cancel()
+    {
+        setStatus(OrderStatus.CANCELLED);
+        for (CartItem item : items)
+            restoreStock(item);
+    }
+
+    // Item Management
+
     public void addItem(Product product, int quantity)
     {
         CartItem existingItem;
@@ -87,7 +92,7 @@ public class Order
         Validator.validatePositive(quantity, "Quantity");
         ensurePending();
         product.decreaseStock(quantity);
-        existingItem = findItem(product);
+        existingItem = findItemById(product.getId());
         if (existingItem != null)
             existingItem.setQuantity(existingItem.getQuantity() + quantity);
         else
@@ -97,26 +102,25 @@ public class Order
 
     public void removeItem(Product product)
     {
+        Validator.validateNotNull(product, "Product cannot be null");
+        removeItemById(product.getId());
+    }
+
+    public CartItem removeItemById(int productId)
+    {
         CartItem item;
 
         ensurePending();
-        item = findItem(product);
+        item = findItemById(productId);
         if (item == null)
             throw new IllegalArgumentException(
-                "Product is not in this order");
-        product.increaseStock(item.getQuantity());
+                "Product with ID " + productId
+                + " is not in this order");
+        restoreStock(item);
         items.remove(item);
         calculateTotal();
+        return (item);
     }
-
-    public void cancel()
-    {
-        setStatus(OrderStatus.CANCELLED);
-        for (CartItem item : items)
-            item.getProduct().increaseStock(item.getQuantity());
-    }
-
-    // Calculations
 
     public void calculateTotal()
     {
@@ -125,17 +129,54 @@ public class Order
             total += item.calculateSubtotal();
     }
 
+    // Display
+
+    public String displayOrder()
+    {
+        return (toString());
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder info;
+
+        info = new StringBuilder();
+        info.append(sectionTitle("Order #" + orderId));
+        info.append(fieldLine("Customer Name", customerName));
+        info.append(fieldLine("Status", status));
+        info.append(fieldLine("Total", money(total)));
+        info.append(separator());
+        info.append("  Ordered Items").append(newLine());
+        info.append(separator());
+        if (items.isEmpty())
+            info.append("  No items in this order.").append(newLine());
+        else
+        {
+            info.append(formatTable(
+                new String[]{"ID", "Name", "Price", "Quantity", "Subtotal"},
+                buildItemRows()));
+        }
+
+        return (info.toString());
+    }
+
     // Helpers
 
-    private CartItem findItem(Product product)
+    private CartItem findItemById(int productId)
     {
         for (CartItem item : items)
         {
-            if (item.getProduct().equals(product))
+            if (item.getProduct().getId() == productId)
                 return (item);
         }
 
         return (null);
+    }
+
+    private void restoreStock(CartItem item)
+    {
+        item.getProduct().increaseStock(item.getQuantity());
     }
 
     private void ensurePending()
@@ -185,7 +226,7 @@ public class Order
     private Object[][] buildItemRows()
     {
         List<Object[]> rows;
-        
+
         rows = new ArrayList<>();
         for (CartItem item : items)
         {
@@ -199,37 +240,5 @@ public class Order
         }
 
         return (rows.toArray(new Object[0][]));
-    }
-
-    // Display
-
-    public String displayOrder()
-    {
-        return (toString());
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder info;
-
-        info = new StringBuilder();
-        info.append(sectionTitle("Order #" + orderId));
-        info.append(fieldLine("Customer Name", customerName));
-        info.append(fieldLine("Status", status));
-        info.append(fieldLine("Total", money(total)));
-        info.append(separator());
-        info.append("  Ordered Items").append(newLine());
-        info.append(separator());
-        if (items.isEmpty())
-            info.append("  No items in this order.").append(newLine());
-        else
-        {
-            info.append(formatTable(
-                new String[]{"ID", "Name", "Price", "Quantity", "Subtotal"},
-                buildItemRows()));
-        }
-
-        return (info.toString());
     }
 }

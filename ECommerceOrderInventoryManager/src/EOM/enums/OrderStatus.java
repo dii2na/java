@@ -1,3 +1,5 @@
+package EOM.enums;
+
 public enum OrderStatus
 {
     PENDING("Pending"),
@@ -10,11 +12,6 @@ public enum OrderStatus
     OrderStatus(String label)
     {
         this.label = label;
-    }
-
-    public String getLabel()
-    {
-        return (label);
     }
 
     @Override

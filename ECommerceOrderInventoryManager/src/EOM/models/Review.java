@@ -1,5 +1,6 @@
 package EOM.models;
 
+import static EOM.utils.ConsoleUtils.*;
 import EOM.utils.Validator;
 
 public class Review
@@ -17,9 +18,9 @@ public class Review
         this.productId = Validator.validatePositive(
             productId, "Product ID");
         this.customerName = Validator.validateString(
-            customerName, "Customer name", false);
+            customerName, "Customer name");
         this.comment = Validator.validateString(
-            comment, "Comment", false);
+            comment, "Comment");
     }
 
     // Getters

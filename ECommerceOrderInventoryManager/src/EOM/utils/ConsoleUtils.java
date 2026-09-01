@@ -21,11 +21,6 @@ public final class ConsoleUtils
         System.out.print(text);
     }
 
-    public static void println()
-    {
-        System.out.println();
-    }
-
     public static void println(Object text)
     {
         System.out.println(text);
@@ -135,4 +130,30 @@ public final class ConsoleUtils
         }
         table.append("|").append(System.lineSeparator());
     }
+
+    public static String formatMenu(String title, String[] options)
+    {
+        StringBuilder menu;
+
+        menu = new StringBuilder();
+        menu.append("╔══════════════════════════════════════════╗")
+            .append(newLine());
+        menu.append("║       ")
+            .append(title)
+            .append("           ║")
+            .append(newLine());
+        menu.append("╠══════════════════════════════════════════╣")
+            .append(newLine());
+        for (int index = 0; index < options.length; index++)
+        {
+            menu.append("║  %2d.  %-34s ║"
+                .formatted(index + 1, options[index]))
+                .append(newLine());
+        }
+        menu.append("╚══════════════════════════════════════════╝")
+            .append(newLine());
+
+        return (menu.toString());
+    }
+
 }

@@ -25,20 +25,14 @@ public class Validator
         return (value);
     }
 
-    public static double validateNonNegative(double value, String fieldName)
-    {
-        if (value < 0)
-            throw new IllegalArgumentException(fieldName + " cannot be negative");
-        return (value);
-    }
-
     // String Validation
 
-    public static String validateString(String value, String fieldName, boolean optional)
+    public static String validateString(
+        String value, String fieldName)
     {
         validateNotNull(value, fieldName);
         value = value.trim();
-        if (!optional && value.isBlank())
+        if (value.isBlank())
             throw new IllegalArgumentException(fieldName + " cannot be empty");
         return (value);
     }

@@ -1,10 +1,9 @@
 package EOM.services;
 
 import static EOM.utils.ConsoleUtils.*;
-import EOM.models.Order;
-import EOM.models.Product;
-import EOM.models.Review;
+import EOM.comparators.OrderTotalComparator;
 import EOM.enums.OrderStatus;
+import EOM.models.*;
 import EOM.utils.Validator;
 import java.util.*;
 
@@ -32,6 +31,8 @@ public class Store
         deliveredOrders = new LinkedHashMap<>();
         reviews = new ArrayList<>();
     }
+
+    // Getters
 
     public List<Product> getProducts()
     {
@@ -63,33 +64,85 @@ public class Store
         return (List.copyOf(reviews));
     }
 
-    // Helpers
+    // Product Management
 
-    private <K, V> void checkIdExistence(
-    Map<K, V> map,
-    K id,
-    String entityName,
-    boolean shouldExist)
+    public Product getProductById(int productId)
     {
-        boolean exists;
-
-        exists = map.containsKey(id);
-        if (shouldExist && !exists)
-            throw new IllegalArgumentException(
-                entityName + " with ID " + id + " does not exist");
-        if (!shouldExist && exists)
-            throw new IllegalArgumentException(
-                entityName + " with ID " + id + " already exists");
+        return (getById(productsById, productId, "Product"));
     }
 
-    private void removeCategoryIfUnused(String category)
+    public boolean hasProduct(int productId)
     {
-        for (Product product : products)
+        return (productsById.containsKey(productId));
+    }
+
+    public void addProduct(Product product)
+    {
+        Validator.validateNotNull(product, "Product cannot be null");
+        checkIdExistence(productsById, product.getId(), "Product", false);
+        products.add(product);
+        productsById.put(product.getId(), product);
+        categories.add(product.getCategory());
+    }
+
+    public void removeProduct(int productId)
+    {
+        checkIdExistence(productsById, productId, "Product", true);
+        if (isProductInPendingOrder(productId))
+            throw new IllegalStateException(
+                "Product " + productId
+                + " is in a PENDING order and cannot be removed");
+        deleteProductEverywhere(productId);
+    }
+
+    private boolean isProductInPendingOrder(int productId)
+    {
+        for (Order order : orders.values())
         {
-            if (product.getCategory().equals(category))
-                return;
+            if (order.isPending() && order.containsProduct(productId))
+                return (true);
         }
-        categories.remove(category);
+
+        return (false);
+    }
+
+    public boolean removeOutOfStockProducts()
+    {
+        Iterator<Product> iterator;
+        boolean removed;
+
+        removed = false;
+        iterator = products.iterator();
+        while (iterator.hasNext())
+        {
+            Product product;
+
+            product = iterator.next();
+            if (product.getStockQuantity() == 0)
+            {
+                deleteProductEverywhere(iterator, product);
+                removed = true;
+            }
+        }
+
+        return (removed);
+    }
+
+    // Product Removal Helpers
+    //
+    // Removing a product keeps the listing, the ID map, and categories in
+    // sync. Deleting while looping must go through the iterator.
+
+    private void removeIfOutOfStock(Product product)
+    {
+        if (product.getStockQuantity() == 0)
+            deleteProductEverywhere(product.getId());
+    }
+
+    private void reAddProductIfMissing(Product product)
+    {
+        if (!productsById.containsKey(product.getId()))
+            addProduct(product);
     }
 
     private void deleteProductEverywhere(int productId)
@@ -111,107 +164,26 @@ public class Store
         removeCategoryIfUnused(product.getCategory());
     }
 
-    private String formatProducts(List<Product> productList)
+    private void removeCategoryIfUnused(String category)
     {
-        List<Object[]> rows;
-
-        rows = new ArrayList<>();
-
-        for (Product product : productList)
+        for (Product product : products)
         {
-            rows.add(new Object[] {
-                product.getId(),
-                product.getName(),
-                money(product.getPrice()),
-                product.getCategory(),
-                product.getStockQuantity()
-            });
+            if (product.getCategory().equals(category))
+                return;
         }
-
-        return (formatTable(
-            new String[]{"ID", "Name", "Price", "Category", "Stock"},
-            rows.toArray(new Object[0][])));
+        categories.remove(category);
     }
 
-    private <K, V> V getById(
-    Map<K, V> map,
-    K id,
-    String entityName)
-    {
-        V value;
-
-        value = map.get(id);
-        if (value == null)
-            throw new IllegalArgumentException(
-                entityName + " with ID " + id + " does not exist");
-
-        return (value);
-    }
-
-    private void validateShippingOrder(Order order)
-    {
-        if (!order.hasItems())
-            throw new IllegalStateException(
-                "An order with no items cannot be shipped");
-        if (shippingQueue.contains(order))
-            throw new IllegalStateException(
-                "Order is already in the shipping list");
-    }
-
-    // Product Management
-
-    public Product getProductById(int productId)
-    {
-        return (getById(productsById, productId, "Product"));
-    }
-    
-    public void addProduct(Product product)
-    {
-        Validator.validateNotNull(product, "Product cannot be null");
-        checkIdExistence(productsById, product.getId(), "Product", false);
-        products.add(product);
-        productsById.put(product.getId(), product);
-        categories.add(product.getCategory());
-    }
-
-    public void removeProduct(int productId)
-    {
-        checkIdExistence(productsById, productId, "Product", true);
-        deleteProductEverywhere(productId);
-    }
-
-    public String displayAllProducts()
-    {
-        return (formatProducts(products));     
-    }
-
-    public String displayProductsOrderedByPrice()
-    {
-        List<Product> sortedProducts;
-
-        sortedProducts = new ArrayList<>(products);
-        Collections.sort(sortedProducts);
-
-        return (formatProducts(sortedProducts));
-    }
-    
-    public String showAllCategories()
-    {
-        StringBuilder info;
-
-        info = new StringBuilder();
-        info.append(sectionTitle("Product Categories"));
-        for (String category : categories)
-            info.append("  • ").append(category).append(newLine());
-
-        return (info.toString());
-    }
-
-    //Order Managment
+    // Order Management
 
     public Order getOrderById(int orderId)
     {
         return (getById(orders, orderId, "Order"));
+    }
+
+    public boolean hasOrder(int orderId)
+    {
+        return (orders.containsKey(orderId));
     }
 
     public void addOrder(Order order)
@@ -228,26 +200,21 @@ public class Store
 
         order = getOrderById(orderId);
         product = getProductById(productId);
-        Validator.validatePositive(quantity, "Quantity");
         order.addItem(product, quantity);
         removeIfOutOfStock(product);
-    }
-
-    private void removeIfOutOfStock(Product product)
-    {
-        if (product.getStockQuantity() == 0)
-            deleteProductEverywhere(product.getId());
     }
 
     public void removeItemFromOrder(int orderId, int productId)
     {
         Order order;
-        Product product;
+        CartItem removedItem;
 
         order = getOrderById(orderId);
-        product = getProductById(productId);
-        order.removeItem(product);
+        removedItem = order.removeItemById(productId);
+        reAddProductIfMissing(removedItem.getProduct());
     }
+
+    // Shipping
 
     public void addOrderToShipping(int orderId)
     {
@@ -266,10 +233,38 @@ public class Store
         if (shippingQueue.isEmpty())
             throw new IllegalStateException(
                 "There are no orders waiting to be shipped");
-        order = shippingQueue.poll();
+        order = shippingQueue.peek();
+        requireItemsForShipping(order);
         order.setStatus(OrderStatus.DELIVERED);
         deliveredOrders.put(order.getOrderId(), order);
+        shippingQueue.poll();
     }
+
+    private void validateShippingOrder(Order order)
+    {
+        OrderStatus status;
+
+        status = order.getStatus();
+        if (status == OrderStatus.CANCELLED
+                || status == OrderStatus.DELIVERED)
+            throw new IllegalStateException(
+                "Order #" + order.getOrderId()
+                + " is " + status + " and cannot be shipped");
+        requireItemsForShipping(order);
+        if (shippingQueue.contains(order))
+            throw new IllegalStateException(
+                "Order is already in the shipping list");
+    }
+
+    private void requireItemsForShipping(Order order)
+    {
+        if (!order.hasItems())
+            throw new IllegalStateException(
+                "Order #" + order.getOrderId()
+                + " has no items and cannot be shipped");
+    }
+
+    // Cancellation
 
     public void cancelOrder(int orderId)
     {
@@ -278,7 +273,16 @@ public class Store
         order = getOrderById(orderId);
         order.cancel();
         shippingQueue.remove(order);
+        restoreOrderProducts(order);
     }
+
+    private void restoreOrderProducts(Order order)
+    {
+        for (CartItem item : order.getItems())
+            reAddProductIfMissing(item.getProduct());
+    }
+
+    // Reviews
 
     public void addReview(int productId, String customerName, String comment)
     {
@@ -308,21 +312,6 @@ public class Store
             rows.toArray(new Object[0][])));
     }
 
-    public void removeOutOfStockProducts()
-    {
-        Iterator<Product> iterator;
-
-        iterator = products.iterator();
-        while (iterator.hasNext())
-        {
-            Product product;
-
-            product = iterator.next();
-            if (product.getStockQuantity() == 0)
-                deleteProductEverywhere(iterator, product);
-        }
-    }
-
     public String displayAllReviews()
     {
         List<Object[]> rows;
@@ -336,63 +325,152 @@ public class Store
                 review.getComment()
             });
         }
+        if (rows.isEmpty())
+            return ("No reviews to display.");
 
         return (formatTable(
             new String[]{"Product ID", "Customer", "Comment"},
             rows.toArray(new Object[0][])));
     }
-    
-    public String displayAllOrders()
+
+    // Display
+
+    public String displayAllProducts()
+    {
+        return (formatProducts(products));
+    }
+
+    public String displayProductsOrderedByPrice()
+    {
+        List<Product> sortedProducts;
+
+        sortedProducts = new ArrayList<>(products);
+        Collections.sort(sortedProducts);
+
+        return (formatProducts(sortedProducts));
+    }
+
+    public String showAllCategories()
     {
         StringBuilder info;
 
         info = new StringBuilder();
-        info.append(sectionTitle("All Orders"));
-        if (orders.isEmpty())
-        {
-            info.append("  • No orders available.").append(newLine());
-            return (info.toString());
-        }
-        for (Order order : orders.values())
-            info.append(order);
+        if (categories.isEmpty())
+            return ("No categories to display.");
+        info.append(sectionTitle("Product Categories"));
+        for (String category : categories)
+            info.append("  • ").append(category).append(newLine());
 
         return (info.toString());
+    }
+
+    public String displayAllOrders()
+    {
+        return (displayOrderList(
+            "All Orders", "No orders available.", orders.values()));
+    }
+
+    public String displayOrdersOrderedByTotal()
+    {
+        List<Order> sortedOrders;
+
+        sortedOrders = new ArrayList<>(orders.values());
+        Collections.sort(sortedOrders, new OrderTotalComparator());
+
+        return (displayOrderList(
+            "Orders Ordered by Total", "No orders available.",
+            sortedOrders));
     }
 
     public String displayShippingQueue()
     {
-        StringBuilder info;
-
-        info = new StringBuilder();
-        info.append(sectionTitle("Shipping Queue"));
-        if (shippingQueue.isEmpty())
-        {
-            info.append("  • No orders waiting for shipping.").append(newLine());
-            return (info.toString());
-        }
-        for (Order order : shippingQueue)
-            info.append(order);
-
-        return (info.toString());
+        return (displayOrderList(
+            "Shipping Queue", "No orders waiting for shipping.",
+            shippingQueue));
     }
 
     public String displayDeliveredOrders()
     {
+        return (displayOrderList(
+            "Delivered Orders", "No delivered orders.",
+            deliveredOrders.values()));
+    }
+
+    private String formatProducts(List<Product> productList)
+    {
+        List<Object[]> rows;
+
+        rows = new ArrayList<>();
+
+        for (Product product : productList)
+        {
+            rows.add(new Object[] {
+                product.getId(),
+                product.getName(),
+                money(product.getPrice()),
+                product.getCategory(),
+                product.getStockQuantity()
+            });
+        }
+        if (rows.isEmpty())
+            return ("No products to display.");
+
+        return (formatTable(
+            new String[]{"ID", "Name", "Price", "Category", "Stock"},
+            rows.toArray(new Object[0][])));
+    }
+
+    private String displayOrderList(
+        String title,
+        String emptyMessage,
+        Collection<Order> orderList)
+    {
         StringBuilder info;
 
         info = new StringBuilder();
-        info.append(sectionTitle("Delivered Orders"));
-        if (deliveredOrders.isEmpty())
+        info.append(sectionTitle(title));
+        if (orderList.isEmpty())
         {
-            info.append("  • No delivered orders.").append(newLine());
+            info.append("  • ").append(emptyMessage).append(newLine());
             return (info.toString());
         }
-        for (Order order : deliveredOrders.values())
+        for (Order order : orderList)
             info.append(order);
 
         return (info.toString());
     }
 
+    // Lookup Helpers
 
+    private <K, V> V getById(
+        Map<K, V> map,
+        K id,
+        String entityName)
+    {
+        V value;
 
+        value = map.get(id);
+        if (value == null)
+            throw new IllegalArgumentException(
+                entityName + " with ID " + id + " does not exist");
+
+        return (value);
+    }
+
+    private <K, V> void checkIdExistence(
+        Map<K, V> map,
+        K id,
+        String entityName,
+        boolean shouldExist)
+    {
+        boolean exists;
+
+        exists = map.containsKey(id);
+        if (shouldExist && !exists)
+            throw new IllegalArgumentException(
+                entityName + " with ID " + id + " does not exist");
+        if (!shouldExist && exists)
+            throw new IllegalArgumentException(
+                entityName + " with ID " + id + " already exists");
+    }
 }

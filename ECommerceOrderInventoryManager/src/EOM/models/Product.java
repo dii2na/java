@@ -3,7 +3,7 @@ package EOM.models;
 import static EOM.utils.ConsoleUtils.*;
 import EOM.utils.Validator;
 
-public class Product implements Comparable<Product>
+public final class Product implements Comparable<Product>
 {
     // Attributes
 
@@ -55,7 +55,7 @@ public class Product implements Comparable<Product>
 
     public void setName(String name)
     {
-        this.name = Validator.validateString(name, "Product name", false);
+        this.name = Validator.validateString(name, "Product name");
     }
 
     public void setPrice(double price)
@@ -65,7 +65,7 @@ public class Product implements Comparable<Product>
 
     public void setCategory(String category)
     {
-        this.category = Validator.validateString(category, "Product category", false);
+        this.category = Validator.validateString(category, "Product category");
     }
 
     public void setStockQuantity(int stockQuantity)
@@ -82,8 +82,8 @@ public class Product implements Comparable<Product>
 
         if (quantity > stockQuantity)
             throw new IllegalArgumentException(
-                "Insufficient stock for product " + id);
-
+                "Insufficient stock for product " + id + " (" + name
+                + "): only " + stockQuantity + " in stock");
         stockQuantity -= quantity;
     }
 
@@ -93,8 +93,7 @@ public class Product implements Comparable<Product>
         stockQuantity += quantity;
     }
 
-    // Default Ordering
-    // Cheapest -> Most Expensive
+    // Default Ordering (Cheapest -> Most Expensive)
 
     @Override
     public int compareTo(Product other)
@@ -103,7 +102,7 @@ public class Product implements Comparable<Product>
         return (Double.compare(this.price, other.price));
     }
 
-    // Equality based on Product ID 
+    // Equality Based on Product ID
 
     @Override
     public boolean equals(Object obj)
@@ -113,6 +112,12 @@ public class Product implements Comparable<Product>
         if (!(obj instanceof Product other))
             return (false);
         return (id == other.id);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return (Integer.hashCode(id));
     }
 
     // String Representation
@@ -128,7 +133,7 @@ public class Product implements Comparable<Product>
         info.append(fieldLine("Price", money(price)));
         info.append(fieldLine("Category", category));
         info.append(fieldLine("Stock Quantity", stockQuantity));
-        
+
         return (info.toString());
     }
 }

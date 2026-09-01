@@ -3,7 +3,7 @@ package EOM.models;
 import static EOM.utils.ConsoleUtils.*;
 import EOM.utils.Validator;
 
-public class CartItem
+public final class CartItem
 {
     // Attributes
 

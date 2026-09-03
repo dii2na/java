@@ -1,28 +1,49 @@
 package EOM.utils;
 
+import java.util.function.Predicate;
+
 public class Validator
 {
+    // Generic Validation
+
+    public static <T> T validate(
+        T value,
+        Predicate<T> condition,
+        String message)
+    {
+        if (!condition.test(value))
+            throw new IllegalArgumentException(message);
+
+        return (value);
+    }
+
     // Numeric Validation
 
-    public static int validatePositive(int value, String fieldName)
+    public static int validatePositive(
+        int value, String fieldName)
     {
-        if (value <= 0)
-            throw new IllegalArgumentException(fieldName + " must be positive");
-        return (value);
+        return (validate(
+            value,
+            number -> number > 0,
+            fieldName + " must be positive"));
     }
 
-    public static double validatePositive(double value, String fieldName)
+    public static double validatePositive(
+        double value, String fieldName)
     {
-        if (value <= 0)
-            throw new IllegalArgumentException(fieldName + " must be positive");
-        return (value);
+        return (validate(
+            value,
+            number -> number > 0,
+            fieldName + " must be positive"));
     }
 
-    public static int validateNonNegative(int value, String fieldName)
+    public static int validateNonNegative(
+        int value, String fieldName)
     {
-        if (value < 0)
-            throw new IllegalArgumentException(fieldName + " cannot be negative");
-        return (value);
+        return (validate(
+            value,
+            number -> number >= 0,
+            fieldName + " cannot be negative"));
     }
 
     // String Validation
@@ -32,17 +53,22 @@ public class Validator
     {
         validateNotNull(value, fieldName);
         value = value.trim();
-        if (value.isBlank())
-            throw new IllegalArgumentException(fieldName + " cannot be empty");
-        return (value);
+
+        return (validate(
+            value,
+            text -> !text.isBlank(),
+            fieldName + " cannot be empty"));
     }
 
     // Object Validation
 
-    public static <T> T validateNotNull(T value, String message)
+    public static <T> T validateNotNull(
+        T value, String message)
     {
-        if (value == null)
-            throw new IllegalArgumentException(message);
-        return (value);
+        return (validate(
+            value,
+            object -> object != null,
+            message));
     }
 }
+

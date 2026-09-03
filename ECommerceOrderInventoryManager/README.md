@@ -26,7 +26,7 @@ The `Store` class keeps seven collections — plus the list of items inside each
 ## Products and Orders: How They're Sorted
 
 - `Product` implements `Comparable<Product>` with its natural order being price, cheapest first. Sorting code then never has to explain how two products compare.
-- Orders are sorted by a different rule — their total — so instead of forcing `Order` into a second natural order, `OrderTotalComparator` implements `Comparator<Order>` as a separate class.
+- Orders are sorted by a different rule — their total — so instead of forcing `Order` into a second natural order, `Comparator.comparingDouble(Order::getTotal)` is used inline.
 - Both sorts run on a **copy**, so the stored collections themselves are never reordered.
 
 ## Project Structure
@@ -37,7 +37,6 @@ ECommerceOrderInventoryManager/
 │   ├── Main.java            # menu loop + input handling
 │   ├── models/              # Product, CartItem, Order, Review
 │   ├── enums/               # OrderStatus
-│   ├── comparators/         # OrderTotalComparator
 │   ├── services/            # Store (all collections + store logic)
 │   └── utils/               # Validator, InputReader, ConsoleUtils
 ├── Makefile                 # compile / run / clean
@@ -79,9 +78,19 @@ An order starts as `PENDING`. From there it can go to `SHIPPED` (put on the ship
 
 Order status is an enum: `PENDING`, `SHIPPED`, `DELIVERED`, `CANCELLED`. An enum means an invalid status can't even be typed, and each status controls which transitions are legal at runtime. `toString()` returns a friendlier label (Pending, Shipped, …).
 
+## Java Features Used
+
+- **Streams** — filtering, mapping, sorting, collecting, `anyMatch`, `findFirst`, `mapToDouble`, `toList`, `toArray`
+- **Lambda Expressions** — comparators, `forEach`, predicates, stream operations
+- **Method References** — `CartItem::calculateSubtotal`, `Product::getPrice`, `Order::getTotal`, `this::restoreStock`, `info::append`
+- **Functional Interfaces** — `Predicate<T>` in `Validator` for generic validation
+- **Optional** — `findItemById` returns `Optional<CartItem>`, used with `isPresent`/`get`, `orElseThrow`
+- **`Comparable<Product>`** — natural ordering by price, cheapest first
+- **`Comparator.comparingDouble`** — inline comparators for order sorting
+
 ## Building and Running
 
-Requires Java 17 or newer (tested on JDK 26) with `javac`/`java` on the PATH.
+Requires Java 16 or newer (tested on JDK 26) with `javac`/`java` on the PATH.
 
 The Makefile is just a small helper for the compile/run/clean commands:
 

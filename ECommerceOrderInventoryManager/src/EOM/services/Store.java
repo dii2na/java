@@ -1,7 +1,6 @@
 package EOM.services;
 
 import static EOM.utils.ConsoleUtils.*;
-import EOM.comparators.OrderTotalComparator;
 import EOM.enums.OrderStatus;
 import EOM.models.*;
 import EOM.utils.Validator;
@@ -97,13 +96,9 @@ public class Store
 
     private boolean isProductInPendingOrder(int productId)
     {
-        for (Order order : orders.values())
-        {
-            if (order.isPending() && order.containsProduct(productId))
-                return (true);
-        }
-
-        return (false);
+        return (orders.values().stream()
+            .anyMatch(order ->
+            order.isPending() && order.containsProduct(productId)));
     }
 
     public boolean removeOutOfStockProducts()
@@ -278,8 +273,8 @@ public class Store
 
     private void restoreOrderProducts(Order order)
     {
-        for (CartItem item : order.getItems())
-            reAddProductIfMissing(item.getProduct());
+        order.getItems().forEach(
+            item -> reAddProductIfMissing(item.getProduct()));
     }
 
     // Reviews
@@ -294,17 +289,14 @@ public class Store
     {
         List<Object[]> rows;
 
-        rows = new ArrayList<>();
-        for (Review review : reviews)
-        {
-            if (review.getProductId() == productId)
+        rows = reviews.stream()
+            .filter(review -> review.getProductId() == productId)
+            .map(review -> new Object[]
             {
-                rows.add(new Object[] {
-                    review.getCustomerName(),
-                    review.getComment()
-                });
-            }
-        }
+                review.getCustomerName(),
+                review.getComment()
+            })
+            .toList();
         if (rows.isEmpty())
             return ("No reviews for product " + productId + ".");
         return (formatTable(
@@ -316,15 +308,14 @@ public class Store
     {
         List<Object[]> rows;
 
-        rows = new ArrayList<>();
-        for (Review review : reviews)
-        {
-            rows.add(new Object[] {
+        rows = reviews.stream()
+            .map(review -> new Object[]
+            {
                 review.getProductId(),
                 review.getCustomerName(),
                 review.getComment()
-            });
-        }
+            })
+            .toList();
         if (rows.isEmpty())
             return ("No reviews to display.");
 
@@ -344,9 +335,9 @@ public class Store
     {
         List<Product> sortedProducts;
 
-        sortedProducts = new ArrayList<>(products);
-        Collections.sort(sortedProducts);
-
+        sortedProducts = products.stream()
+            .sorted()
+            .toList();
         return (formatProducts(sortedProducts));
     }
 
@@ -358,9 +349,8 @@ public class Store
         if (categories.isEmpty())
             return ("No categories to display.");
         info.append(sectionTitle("Product Categories"));
-        for (String category : categories)
-            info.append("  • ").append(category).append(newLine());
-
+        categories.forEach(category ->
+            info.append("  • ").append(category).append(newLine()));
         return (info.toString());
     }
 
@@ -374,9 +364,9 @@ public class Store
     {
         List<Order> sortedOrders;
 
-        sortedOrders = new ArrayList<>(orders.values());
-        Collections.sort(sortedOrders, new OrderTotalComparator());
-
+        sortedOrders = orders.values().stream()
+            .sorted(Comparator.comparingDouble(Order::getTotal))
+            .toList();
         return (displayOrderList(
             "Orders Ordered by Total", "No orders available.",
             sortedOrders));
@@ -400,18 +390,16 @@ public class Store
     {
         List<Object[]> rows;
 
-        rows = new ArrayList<>();
-
-        for (Product product : productList)
-        {
-            rows.add(new Object[] {
+        rows = productList.stream()
+            .map(product -> new Object[]
+            {
                 product.getId(),
                 product.getName(),
                 money(product.getPrice()),
                 product.getCategory(),
                 product.getStockQuantity()
-            });
-        }
+            })
+            .toList();
         if (rows.isEmpty())
             return ("No products to display.");
 
@@ -434,8 +422,7 @@ public class Store
             info.append("  • ").append(emptyMessage).append(newLine());
             return (info.toString());
         }
-        for (Order order : orderList)
-            info.append(order);
+        orderList.forEach(info::append);
 
         return (info.toString());
     }

@@ -79,7 +79,6 @@ public final class Product implements Comparable<Product>
     public void decreaseStock(int quantity)
     {
         Validator.validatePositive(quantity, "Quantity");
-
         if (quantity > stockQuantity)
             throw new IllegalArgumentException(
                 "Insufficient stock for product " + id + " (" + name
@@ -92,16 +91,7 @@ public final class Product implements Comparable<Product>
         Validator.validatePositive(quantity, "Quantity");
         stockQuantity += quantity;
     }
-
-    // Default Ordering (Cheapest -> Most Expensive)
-
-    @Override
-    public int compareTo(Product other)
-    {
-        Validator.validateNotNull(other, "Product cannot be null");
-        return (Double.compare(this.price, other.price));
-    }
-
+    
     // Equality Based on Product ID
 
     @Override
@@ -118,6 +108,14 @@ public final class Product implements Comparable<Product>
     public int hashCode()
     {
         return (Integer.hashCode(id));
+    }
+
+    // Comparable
+
+    @Override
+    public int compareTo(Product other)
+    {
+        return (Double.compare(this.price, other.price));
     }
 
     // String Representation

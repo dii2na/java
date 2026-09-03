@@ -1,6 +1,7 @@
 package EOM.models;
 
 import static EOM.utils.ConsoleUtils.*;
+import java.util.Optional;
 import EOM.enums.OrderStatus;
 import EOM.utils.Validator;
 import java.util.ArrayList;
@@ -72,29 +73,31 @@ public class Order
 
     public boolean containsProduct(int productId)
     {
-        return (findItemById(productId) != null);
+        return (findItemById(productId).isPresent());
     }
 
     public void cancel()
     {
         setStatus(OrderStatus.CANCELLED);
-        for (CartItem item : items)
-            restoreStock(item);
+        items.forEach(this::restoreStock);
     }
 
     // Item Management
 
     public void addItem(Product product, int quantity)
     {
-        CartItem existingItem;
+        Optional<CartItem> existingItem;
 
         Validator.validateNotNull(product, "Product cannot be null");
         Validator.validatePositive(quantity, "Quantity");
         ensurePending();
         product.decreaseStock(quantity);
         existingItem = findItemById(product.getId());
-        if (existingItem != null)
-            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+        if (existingItem.isPresent())
+        {
+            existingItem.get().setQuantity(
+            existingItem.get().getQuantity() + quantity);
+        }
         else
             items.add(new CartItem(product, quantity));
         calculateTotal();
@@ -111,11 +114,10 @@ public class Order
         CartItem item;
 
         ensurePending();
-        item = findItemById(productId);
-        if (item == null)
-            throw new IllegalArgumentException(
-                "Product with ID " + productId
-                + " is not in this order");
+        item = findItemById(productId)
+            .orElseThrow(() -> new IllegalArgumentException(
+            "Product with ID " + productId
+            + " is not in this order"));
         restoreStock(item);
         items.remove(item);
         calculateTotal();
@@ -124,9 +126,9 @@ public class Order
 
     public void calculateTotal()
     {
-        total = 0.0;
-        for (CartItem item : items)
-            total += item.calculateSubtotal();
+        total = items.stream()
+        .mapToDouble(CartItem::calculateSubtotal)
+        .sum();
     }
 
     // Display
@@ -163,15 +165,11 @@ public class Order
 
     // Helpers
 
-    private CartItem findItemById(int productId)
+    private Optional<CartItem> findItemById(int productId)
     {
-        for (CartItem item : items)
-        {
-            if (item.getProduct().getId() == productId)
-                return (item);
-        }
-
-        return (null);
+        return (items.stream()
+            .filter(item -> item.getProduct().getId() == productId)
+            .findFirst());
     }
 
     private void restoreStock(CartItem item)
@@ -225,20 +223,15 @@ public class Order
 
     private Object[][] buildItemRows()
     {
-        List<Object[]> rows;
-
-        rows = new ArrayList<>();
-        for (CartItem item : items)
-        {
-            rows.add(new Object[] {
+        return (items.stream()
+            .map(item -> new Object[]
+            {
                 item.getProduct().getId(),
                 item.getProduct().getName(),
                 money(item.getProduct().getPrice()),
                 item.getQuantity(),
                 money(item.calculateSubtotal())
-            });
-        }
-
-        return (rows.toArray(new Object[0][]));
+            })
+            .toArray(Object[][]::new));
     }
 }

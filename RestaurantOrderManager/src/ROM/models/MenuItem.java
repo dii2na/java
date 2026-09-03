@@ -71,14 +71,20 @@ public class MenuItem
         return (id == other.id);
     }
 
+    @Override
+    public int hashCode()
+    {
+        return (Integer.hashCode(id));
+    }
+
     // Display
 
     @Override
     public String toString()
     {
-        return ("ID: " + id +
-                " | Name: " + name +
-                " | Category: " + category +
-                " | Price: " + money(price));
+        return (formatTable(null, new Object[][]
+        {
+            { id, name, category, money(price) }
+        }));
     }
 }

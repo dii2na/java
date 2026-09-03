@@ -3,8 +3,9 @@ package ROM;
 import static ROM.utils.ConsoleUtils.*;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Scanner;
-
+import java.util.stream.Collectors;
 import ROM.models.MenuItem;
 import ROM.models.Order;
 import ROM.services.Restaurant;
@@ -58,19 +59,14 @@ public class Main
 
     private static String ordersSummary(Restaurant restaurant)
     {
-        StringBuilder orderIds;
-        int orderCount;
+        String orderIds;
 
-        orderIds = new StringBuilder();
-        orderCount = 0;
-        for (Order order : restaurant.getOrders().values())
-        {
-            if (orderCount > 0)
-                orderIds.append(", ");
-            orderIds.append(order.getOrderId()).append(" (").append(order.getStatus()).append(")");
-            orderCount++;
-        }
-        return (orderCount == 0 ? "0" : orderCount + " | " + orderIds);
+        orderIds = restaurant.getOrders().values().stream()
+                .map(order -> order.getOrderId() + " (" + order.getStatus() + ")")
+                .collect(Collectors.joining(", "));
+        return (orderIds.isEmpty()
+                ? "0"
+                : restaurant.getOrders().size() + " | " + orderIds);
     }
 
     private static void displaySystemStatus(Restaurant restaurant)
@@ -157,30 +153,16 @@ public class Main
 
     private static String menuItemIds(Restaurant restaurant)
     {
-        StringBuilder ids;
-
-        ids = new StringBuilder();
-        for (MenuItem item : restaurant.getMenu())
-        {
-            if (ids.length() > 0)
-                ids.append(", ");
-            ids.append(item.getId());
-        }
-        return (ids.toString());
+        return (restaurant.getMenu().stream()
+                .map(item -> String.valueOf(item.getId()))
+                .collect(Collectors.joining(", ")));
     }
 
     private static String orderIds(Restaurant restaurant)
     {
-        StringBuilder ids;
-
-        ids = new StringBuilder();
-        for (Order order : restaurant.getOrders().values())
-        {
-            if (ids.length() > 0)
-                ids.append(", ");
-            ids.append(order.getOrderId());
-        }
-        return (ids.toString());
+        return (restaurant.getOrders().values().stream()
+            .map(order -> String.valueOf(order.getOrderId()))
+            .collect(Collectors.joining(", ")));
     }
 
     private static MenuItem findMenuItem(
@@ -188,15 +170,15 @@ public class Main
         Restaurant restaurant)
     {
         int id;
-        MenuItem item;
+        Optional<MenuItem> item;
 
         println("Available menu items: " + menuItemIds(restaurant));
         while (true)
         {
             id = readId(scanner, "Menu Item ID");
             item = restaurant.findMenuItemById(id);
-            if (item != null)
-                return (item);
+            if (item.isPresent())
+                return (item.get());
             println("Menu item not found.");
         }
     }
@@ -206,15 +188,15 @@ public class Main
         Restaurant restaurant)
     {
         int orderId;
-        Order order;
+        Optional<Order> order;
 
         println("Available orders: " + orderIds(restaurant));
         while (true)
         {
             orderId = readId(scanner, "Order ID");
             order = restaurant.findOrderById(orderId);
-            if (order != null)
-                return (order);
+            if (order.isPresent())
+                return (order.get());
             println("Order not found.");
         }
     }
@@ -256,20 +238,18 @@ public class Main
     private static void displayMenu(Restaurant restaurant)
     {
         Object[][] rows;
-        int index;
 
         if (isEmptyCollection(restaurant.getMenu(), "No menu items found."))
             return;
-        rows = new Object[restaurant.getMenu().size()][4];
-        index = 0;
-        for (MenuItem item : restaurant.getMenu())
-        {
-            rows[index][0] = item.getId();
-            rows[index][1] = item.getName();
-            rows[index][2] = item.getCategory();
-            rows[index][3] = money(item.getPrice());
-            index++;
-        }
+        rows = restaurant.getMenu().stream()
+            .map(item -> new Object[]
+            {
+                    item.getId(),
+                    item.getName(),
+                    item.getCategory(),
+                    money(item.getPrice())
+            })
+            .toArray(Object[][]::new);
         println(sectionTitle("Restaurant Menu"));
         print(formatTable(MENU_HEADER, rows));
     }
@@ -286,7 +266,7 @@ public class Main
         println(sectionTitle("Search Result"));
         print(formatTable(MENU_HEADER, new Object[][]
         {
-                { item.getId(), item.getName(), item.getCategory(), money(item.getPrice()) }
+            { item.getId(), item.getName(), item.getCategory(), money(item.getPrice()) }
         }));
     }
 
@@ -431,8 +411,8 @@ public class Main
                 "No completed orders found."))
             return;
         println(sectionTitle("Completed Orders"));
-        for (Order order : restaurant.getCompletedOrders().values())
-            println(order);
+        restaurant.getCompletedOrders().values()
+            .forEach(order -> println(order));
     }
 
     // Program Flow

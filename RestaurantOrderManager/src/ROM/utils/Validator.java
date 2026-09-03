@@ -1,28 +1,33 @@
 package ROM.utils;
 
+import java.util.function.Predicate;
+
 public class Validator
 {
     // Numeric Validation
 
     public static int validatePositive(int value, String fieldName)
     {
-        if (value <= 0)
-            throw new IllegalArgumentException(fieldName + " must be positive");
-        return (value);
+        return validate(
+            value,
+            number -> number > 0,
+            fieldName + " must be positive");
     }
 
     public static double validatePositive(double value, String fieldName)
     {
-        if (value <= 0)
-            throw new IllegalArgumentException(fieldName + " must be positive");
-        return (value);
+        return validate(
+            value,
+            number -> number > 0,
+            fieldName + " must be positive");
     }
 
     public static double validateNonNegative(double value, String fieldName)
     {
-        if (value < 0)
-            throw new IllegalArgumentException(fieldName + " cannot be negative");
-        return (value);
+        return validate(
+            value,
+            number -> number >= 0,
+            fieldName + " cannot be negative");
     }
 
     // String Validation
@@ -41,6 +46,16 @@ public class Validator
     public static <T> T validateNotNull(T value, String message)
     {
         if (value == null)
+            throw new IllegalArgumentException(message);
+        return (value);
+    }
+
+    private static <T> T validate(
+        T value,
+        Predicate<T> condition,
+        String message)
+    {
+        if (!condition.test(value))
             throw new IllegalArgumentException(message);
         return (value);
     }

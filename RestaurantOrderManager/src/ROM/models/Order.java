@@ -2,6 +2,7 @@ package ROM.models;
 
 import static ROM.utils.ConsoleUtils.*;
 import java.util.ArrayList;
+import java.util.Optional;
 import ROM.enums.OrderStatus;
 import ROM.models.MenuItem;
 import ROM.utils.Validator;
@@ -105,36 +106,33 @@ public class Order
     {
         double total;
 
-        total = 0;
-        for (OrderItem orderItem : items)
-            total += orderItem.calculateSubtotal();
+        total = items.stream()
+                .mapToDouble(OrderItem::calculateSubtotal)
+                .sum();
         setTotal(total);
         return (total);
     }
 
     // Item Operations
 
-    private OrderItem findOrderItem(MenuItem item)
+    private Optional<OrderItem> findOrderItem(MenuItem item)
     {
-        for (OrderItem orderItem : items)
-        {
-            if (orderItem.getItem().equals(item))
-                return (orderItem);
-        }
-        return (null);
+        return items.stream()
+                .filter(orderItem -> orderItem.getItem().equals(item))
+                .findFirst();
     }
 
     public void addItem(MenuItem item, int quantity)
     {
-        OrderItem existing;
+        Optional<OrderItem> existing;
 
         item = Validator.validateNotNull(item, "Item cannot be null");
         quantity = Validator.validatePositive(quantity, "Quantity");
         ensureModifiable("Items can only be added to pending orders.");
         existing = findOrderItem(item);
-        if (existing != null)
+        if (existing.isPresent())
         {
-            existing.increaseQuantity(quantity);
+            existing.get().increaseQuantity(quantity);
             calculateTotal();
             return;
         }
@@ -144,13 +142,10 @@ public class Order
 
     public void removeItem(MenuItem item)
     {
-        OrderItem found;
-
         item = Validator.validateNotNull(item, "Item cannot be null");
         ensureModifiable("Items can only be removed from pending orders.");
-        found = findOrderItem(item);
-        if (found == null)
-            throw new IllegalArgumentException("Item is not in this order.");
+        OrderItem found = findOrderItem(item)
+                .orElseThrow(() -> new IllegalArgumentException("Item is not in this order."));
         items.remove(found);
         calculateTotal();
     }
@@ -190,12 +185,24 @@ public class Order
         print(toString());
     }
 
+    private Object[] toRow(OrderItem orderItem)
+    {
+        return new Object[]
+        {
+            orderItem.getItem().getId(),
+            orderItem.getItem().getName(),
+            orderItem.getItem().getCategory(),
+            money(orderItem.getItem().getPrice()),
+            orderItem.getQuantity(),
+            money(orderItem.calculateSubtotal())
+        };
+    }
+
     @Override
     public String toString()
     {
         StringBuilder info;
         Object[][] rows;
-        int index;
 
         info = new StringBuilder();
         info.append(sectionTitle("Order #" + orderId));
@@ -211,18 +218,9 @@ public class Order
         }
         else
         {
-            rows = new Object[items.size()][6];
-            index = 0;
-            for (OrderItem orderItem : items)
-            {
-                rows[index][0] = orderItem.getItem().getId();
-                rows[index][1] = orderItem.getItem().getName();
-                rows[index][2] = orderItem.getItem().getCategory();
-                rows[index][3] = money(orderItem.getItem().getPrice());
-                rows[index][4] = orderItem.getQuantity();
-                rows[index][5] = money(orderItem.calculateSubtotal());
-                index++;
-            }
+            rows = items.stream()
+                    .map(this::toRow)
+                    .toArray(Object[][]::new);
             info.append(formatTable(ITEM_HEADER, rows));
         }
         return (info.toString());

@@ -1,5 +1,9 @@
 package ROM.services;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -12,10 +16,11 @@ public class Restaurant
 {
     // Attributes
 
-    private final ArrayList<MenuItem> menu;
-    private final LinkedList<Order> kitchenQueue;
-    private final HashMap<Integer, Order> orders;
-    private final LinkedHashMap<Integer, Order> completedOrders;
+    private final List<MenuItem> menu;
+    private final Queue<Order> kitchenQueue;
+    private final Map<Integer, Order> orders;
+    // LinkedHashMap preserves the completion (insertion) order.
+    private final Map<Integer, Order> completedOrders;
 
     // Constructor
 
@@ -29,22 +34,22 @@ public class Restaurant
 
     // Getters
 
-    public ArrayList<MenuItem> getMenu()
+    public List<MenuItem> getMenu()
     {
         return (menu);
     }
 
-    public LinkedHashMap<Integer, Order> getCompletedOrders()
+    public Map<Integer, Order> getCompletedOrders()
     {
         return (completedOrders);
     }
 
-    public HashMap<Integer, Order> getOrders()
+    public Map<Integer, Order> getOrders()
     {
         return (orders);
     }
 
-    public LinkedList<Order> getKitchenQueue()
+    public Queue<Order> getKitchenQueue()
     {
         return (kitchenQueue);
     }
@@ -77,14 +82,11 @@ public class Restaurant
 
     // Menu Item Operations
 
-    public MenuItem findMenuItemById(int id)
+    public Optional<MenuItem> findMenuItemById(int id)
     {
-        for (MenuItem item : menu)
-        {
-            if (item.getId() == id)
-                return (item);
-        }
-        return (null);
+        return (menu.stream()
+                .filter(item -> item.getId() == id)
+                .findFirst());
     }
 
     public void addMenuItem(MenuItem item)
@@ -101,9 +103,9 @@ public class Restaurant
 
     // Order Operations
 
-    public Order findOrderById(int id)
+    public Optional<Order> findOrderById(int id)
     {
-        return (orders.get(id));
+        return (Optional.ofNullable(orders.get(id)));
     }
 
     public void createOrder(Order order)

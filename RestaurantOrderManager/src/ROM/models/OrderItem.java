@@ -56,8 +56,9 @@ public class OrderItem
     @Override
     public String toString()
     {
-        return (item.getName() +
-                " x" + quantity +
-                " | Subtotal: " + money(calculateSubtotal()));
+        return (formatTable(null, new Object[][]
+        {
+            { item.getName(), quantity, money(calculateSubtotal()) }
+        }));
     }
 }

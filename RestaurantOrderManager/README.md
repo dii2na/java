@@ -1,9 +1,11 @@
 # Restaurant Order Manager
 
 A console-based Java application that manages a restaurant's menu and order
-workflow, built as a Java Collections assignment. The program demonstrates
-`ArrayList`, `LinkedList`, `HashMap`, and `LinkedHashMap` through a complete
-menu-driven order-management system.
+workflow. The program demonstrates `ArrayList`, `LinkedList`, `HashMap`, and
+`LinkedHashMap` through a complete menu-driven order-management system, and
+makes deliberate use of Java 8 features (Streams, Lambdas, `Optional`,
+functional interfaces, method references, and `Collectors`) to keep the code
+concise and declarative.
 
 ## Features
 
@@ -43,6 +45,36 @@ Create Order  ->  PENDING  ->  Send to Kitchen  ->  IN_KITCHEN  ->  Process  -> 
 | `LinkedList<Order>`     | FIFO kitchen queue of orders to be processed                |
 | `HashMap<Integer, Order>` | Permanent record of every order ever created             |
 | `LinkedHashMap<Integer, Order>` | Completed orders, preserved in completion order   |
+
+The `Restaurant` service stores these fields behind the interface types
+(`List`, `Queue`, `Map`) while keeping the ordered/concrete implementations
+(`ArrayList`, `LinkedList`, `HashMap`, `LinkedHashMap`) at construction time.
+This keeps the public API decoupled from the concrete backing implementation.
+
+## Java 8 Features Used
+
+| Feature                    | Where it is used                                                        |
+|----------------------------|-------------------------------------------------------------------------|
+| `Optional`                 | `Restaurant.findMenuItemById`, `Restaurant.findOrderById`, `Order.findOrderItem` |
+| Stream `filter`/`findFirst`| `Restaurant.findMenuItemById`, `Order.findOrderItem`                     |
+| Stream `mapToDouble`/`sum` | `Order.calculateTotal`                                                   |
+| Stream `map`/`toArray`     | `Order.toString`, `Main.displayMenu` (builds table rows)                 |
+| `forEach` + lambda         | `Main.displayCompletedOrders`                                            |
+| `Collectors.joining`       | `Main.ordersSummary`, `Main.menuItemIds`, `Main.orderIds`                |
+| Lambdas                    | Stream pipelines and `Optional` consumers throughout                     |
+| Method references          | `OrderItem::calculateSubtotal`, `Object[][]::new`, `Order::toRow`        |
+| `Predicate` (functional)   | `Validator.validate` delegates the numeric checks to a `Predicate`       |
+| `Function` (functional)    | `InputReader.readValidatedString` accepts a validator `Function`         |
+| `Integer.hashCode`         | `MenuItem.hashCode`                                                      |
+
+## Modern Java Features Also Used
+
+The project is not restricted to Java 8 syntax. A few newer constructs are
+used where they make the code clearer and are intentionally preserved:
+
+- Arrow `switch` (`case ->`) in `Main.startSystem` and `Main.shouldExit`
+- `String.formatted()` for string formatting
+- `String.repeat()` and `String.isBlank()` in formatting/validation helpers
 
 ## Requirements
 

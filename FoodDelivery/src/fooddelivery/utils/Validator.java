@@ -83,6 +83,19 @@ public class Validator
             fieldName + " must be between " + min + " and " + max));
     }
 
+    public static BigDecimal validateInRange(
+        BigDecimal value,
+        BigDecimal min,
+        BigDecimal max,
+        String fieldName)
+    {
+        return (validate(
+            value,
+            number -> number.compareTo(min) >= 0
+                && number.compareTo(max) <= 0,
+            fieldName + " must be between " + min + " and " + max));
+    }
+
     // String Validation
 
     public static String validateString(

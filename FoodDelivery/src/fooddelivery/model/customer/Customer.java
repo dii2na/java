@@ -1,10 +1,10 @@
 package fooddelivery.model.customer;
 
 import fooddelivery.utils.Validator;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.math.BigDecimal;
 
 public class Customer
 {
@@ -80,5 +80,23 @@ public class Customer
     public void incrementCompletedOrderCount()
     {
         completedOrderCount++;
+    }
+
+    @Override
+    public boolean equals(Object object)
+    {
+        if (this == object)
+            return (true);
+
+        if (!(object instanceof Customer other))
+            return (false);
+
+        return (id.equals(other.id));
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return (id.hashCode());
     }
 }

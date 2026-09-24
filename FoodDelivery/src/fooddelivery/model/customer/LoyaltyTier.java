@@ -1,18 +1,20 @@
 package fooddelivery.model.customer;
 
+import java.math.BigDecimal;
+
 public enum LoyaltyTier 
 {
-    BRONZE(0, 9, 0.0),
-    SILVER(10, 29, 0.10),
-    GOLD(30, Integer.MAX_VALUE, 1.0);
+    BRONZE(0, 9, BigDecimal.ZERO),
+    SILVER(10, 29, new BigDecimal("0.10")),
+    GOLD(30, Integer.MAX_VALUE, BigDecimal.ONE);
 
     private final int minCompletedOrders;
     private final int maxCompletedOrders;
-    private final double deliveryFeeDiscount;
+    private final BigDecimal deliveryFeeDiscount;
 
     LoyaltyTier(int minCompletedOrders,
                 int maxCompletedOrders,
-                double deliveryFeeDiscount) 
+                BigDecimal deliveryFeeDiscount) 
     {
         this.minCompletedOrders = minCompletedOrders;
         this.maxCompletedOrders = maxCompletedOrders;
@@ -29,7 +31,7 @@ public enum LoyaltyTier
         return (maxCompletedOrders);
     }
 
-    public double getDeliveryFeeDiscount() 
+    public BigDecimal getDeliveryFeeDiscount() 
     {
         return (deliveryFeeDiscount);
     }

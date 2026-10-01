@@ -2,7 +2,7 @@ package fooddelivery.model.customer;
 
 import fooddelivery.utils.Validator;
 
-public class Address 
+public class Address
 {
     private final String district;
     private final String detail;
@@ -13,15 +13,26 @@ public class Address
         this.detail = Validator.validateString(detail, "Address detail");
     }
 
-    public String getDistrict() 
+    public String getDistrict()
     {
         return (district);
     }
 
-    public String getDetail() 
+    public String getDetail()
     {
         return (detail);
     }
+
+    // Textual representation
+
+    @Override
+    public String toString()
+    {
+        return ("Address{district=%s, detail=%s}"
+            .formatted(district, detail));
+    }
+
+    // Identity
 
     @Override
     public boolean equals(Object object)

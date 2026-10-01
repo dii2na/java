@@ -1,20 +1,37 @@
-package fooddelivery.service;
+package fooddelivery.service.pricing;
 
+import fooddelivery.config.PlatformConfig;
+import fooddelivery.model.customer.LoyaltyTier;
 import fooddelivery.model.order.Order;
 import fooddelivery.utils.Validator;
-import fooddelivery.model.customer.LoyaltyTier;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public class StandardPricingStrategy
     implements PricingStrategy
 {
+    private final PlatformConfig config;
+
+    public StandardPricingStrategy()
+    {
+        this.config = PlatformConfig.getInstance();
+    }
+
     @Override
     public BigDecimal calculateTotal(Order order)
     {
+        return (quote(order).getTotal());
+    }
+
+    @Override
+    public PriceBreakdown quote(Order order)
+    {
         BigDecimal subtotal;
-        BigDecimal deliveryFee;
+        BigDecimal baseDeliveryFee;
+        BigDecimal extraDistanceFee;
+        BigDecimal rawDeliveryFee;
+        BigDecimal loyaltyDeliveryDiscount;
+        BigDecimal promotionDeliveryDiscount;
         BigDecimal serviceFee;
         BigDecimal promotionDiscount;
         BigDecimal total;
@@ -23,64 +40,69 @@ public class StandardPricingStrategy
         order = Validator.validateNotNull(
             order, "Order");
         subtotal = order.calculateSubtotal();
-        deliveryFee = calculateDeliveryFee(order);
+        baseDeliveryFee = config.getBaseDeliveryFee();
+        extraDistanceFee = calculateExtraDistanceFee(order);
+        rawDeliveryFee = baseDeliveryFee
+            .add(extraDistanceFee);
         loyaltyTier = order.getCustomer().getLoyaltyTier();
-        deliveryFee = applyLoyaltyDiscount(
-            deliveryFee, loyaltyTier);
+        loyaltyDeliveryDiscount = rawDeliveryFee
+            .multiply(loyaltyTier.getDeliveryFeeDiscount());
+        promotionDeliveryDiscount = calculatePromotionDeliveryDiscount(
+            order, rawDeliveryFee.subtract(loyaltyDeliveryDiscount));
         serviceFee = calculateServiceFee(subtotal);
         promotionDiscount = calculatePromotionDiscount(
             order, subtotal);
-
         total = subtotal
-            .add(deliveryFee)
+            .add(rawDeliveryFee)
             .add(serviceFee)
+            .subtract(loyaltyDeliveryDiscount)
+            .subtract(promotionDeliveryDiscount)
             .subtract(promotionDiscount);
 
-        return (total.max(BigDecimal.ZERO)
-            .setScale(2, RoundingMode.HALF_UP));
+        return (new PriceBreakdown(
+            subtotal,
+            baseDeliveryFee,
+            extraDistanceFee,
+            loyaltyDeliveryDiscount,
+            promotionDeliveryDiscount,
+            serviceFee,
+            promotionDiscount,
+            total.max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP)));
     }
 
-    private BigDecimal calculateDeliveryFee(Order order)
+    private BigDecimal calculateExtraDistanceFee(Order order)
     {
-        BigDecimal baseFee;
-        BigDecimal feePerExtraKilometer;
-        BigDecimal includedDistance;
         BigDecimal extraDistance;
 
-        baseFee = new BigDecimal("15");
-        feePerExtraKilometer = new BigDecimal("3");
-        includedDistance = new BigDecimal("3");
-
         extraDistance = order.getDeliveryDistance()
-            .subtract(includedDistance);
+            .subtract(config.getIncludedDistance());
 
         if (extraDistance.compareTo(BigDecimal.ZERO) <= 0)
-            return (baseFee);
+            return (BigDecimal.ZERO);
 
-        return (baseFee.add(
-            extraDistance.multiply(feePerExtraKilometer)));
+        return (extraDistance.multiply(
+            config.getExtraKmFee()));
     }
 
-    private BigDecimal applyLoyaltyDiscount(
-        BigDecimal deliveryFee,
-        LoyaltyTier loyaltyTier)
+    private BigDecimal calculatePromotionDeliveryDiscount(
+        Order order,
+        BigDecimal deliveryFee)
     {
-        BigDecimal discountRate;
+        if (order.getPromotion() == null)
+            return (BigDecimal.ZERO);
 
-        discountRate = loyaltyTier.getDeliveryFeeDiscount();
-
-        return (deliveryFee.multiply(
-            BigDecimal.ONE.subtract(discountRate)));
+        return (order.getPromotion()
+            .calculateDeliveryFeeDiscount(deliveryFee)
+            .min(deliveryFee)
+            .max(BigDecimal.ZERO));
     }
 
     private BigDecimal calculateServiceFee(
         BigDecimal subtotal)
     {
-        BigDecimal serviceFeeRate;
-
-        serviceFeeRate = new BigDecimal("0.10");
-
-        return (subtotal.multiply(serviceFeeRate)
+        return (subtotal
+            .multiply(config.getServiceFeeRate())
             .setScale(2, RoundingMode.HALF_UP));
     }
 
@@ -92,6 +114,8 @@ public class StandardPricingStrategy
             return (BigDecimal.ZERO);
 
         return (order.getPromotion()
-            .calculateDiscount(subtotal));
+            .calculateDiscount(subtotal)
+            .min(subtotal)
+            .setScale(2, RoundingMode.HALF_UP));
     }
 }

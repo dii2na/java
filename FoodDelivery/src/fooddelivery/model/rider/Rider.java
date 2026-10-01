@@ -1,8 +1,9 @@
 package fooddelivery.model.rider;
 
 import fooddelivery.exception.BusyRiderException;
-import fooddelivery.utils.Validator;
+import fooddelivery.exception.FoodDeliveryException;
 import fooddelivery.model.order.Order;
+import fooddelivery.utils.Validator;
 import java.util.Optional;
 
 public class Rider
@@ -32,6 +33,8 @@ public class Rider
         this.completedDeliveriesCount = 0;
         this.activeOrder = null;
     }
+
+    // Reading the rider
 
     public String getId()
     {
@@ -68,6 +71,8 @@ public class Rider
         return (completedDeliveriesCount);
     }
 
+    // Duty and deliveries
+
     public void updateDistrict(String district)
     {
         currentDistrict = Validator.validateString(
@@ -76,6 +81,10 @@ public class Rider
 
     public void setAvailable(boolean available)
     {
+        if (available && activeOrder != null)
+            throw new BusyRiderException(
+                "Rider cannot go back on duty while holding an order");
+
         this.available = available;
     }
 
@@ -97,15 +106,37 @@ public class Rider
 
     public void completeOrder(Order order)
     {
+        releaseOrder(order);
+        incrementCompletedDeliveries();
+    }
+
+    public void releaseOrder(Order order)
+    {
         order = Validator.validateNotNull(
             order, "Order");
         if (activeOrder == null || !activeOrder.equals(order))
-            throw new IllegalStateException(
+            throw new FoodDeliveryException(
                 "Order is not the rider's active order");
         activeOrder = null;
         available = true;
-        completedDeliveriesCount++;
     }
+
+    // Textual representation
+
+    @Override
+    public String toString()
+    {
+        return ("Rider{id=%s, name=%s, vehicle=%s, district=%s, available=%s, deliveries=%d}"
+            .formatted(
+                id,
+                name,
+                vehicleType,
+                currentDistrict,
+                available,
+                completedDeliveriesCount));
+    }
+
+    // Identity
 
     @Override
     public boolean equals(Object object)

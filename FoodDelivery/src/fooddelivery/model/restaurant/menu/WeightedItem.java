@@ -1,7 +1,6 @@
 package fooddelivery.model.restaurant.menu;
 
 import fooddelivery.utils.Validator;
-
 import java.math.BigDecimal;
 
 public class WeightedItem extends MenuItem
@@ -12,7 +11,8 @@ public class WeightedItem extends MenuItem
         BigDecimal pricePerKg,
         String category,
         int preparationTime,
-        boolean available)
+        boolean available,
+        BigDecimal stockQuantity)
     {
         super(
             id,
@@ -20,7 +20,8 @@ public class WeightedItem extends MenuItem
             pricePerKg,
             category,
             preparationTime,
-            available);
+            available,
+            stockQuantity);
     }
 
     @Override
@@ -30,5 +31,17 @@ public class WeightedItem extends MenuItem
             quantity, "Weight");
 
         return (getPrice().multiply(quantity));
+    }
+
+    @Override
+    public String toString()
+    {
+        return ("WeightedItem{id=%s, name=%s, category=%s, pricePerKg=%s, available=%s}"
+            .formatted(
+                getId(),
+                getName(),
+                getCategory(),
+                getDisplayPrice(),
+                isAvailable()));
     }
 }

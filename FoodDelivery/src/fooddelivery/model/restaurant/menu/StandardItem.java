@@ -1,7 +1,6 @@
 package fooddelivery.model.restaurant.menu;
 
 import fooddelivery.utils.Validator;
-
 import java.math.BigDecimal;
 
 public class StandardItem extends MenuItem
@@ -12,7 +11,8 @@ public class StandardItem extends MenuItem
         BigDecimal price,
         String category,
         int preparationTime,
-        boolean available)
+        boolean available,
+        BigDecimal stockQuantity)
     {
         super(
             id,
@@ -20,7 +20,8 @@ public class StandardItem extends MenuItem
             price,
             category,
             preparationTime,
-            available);
+            available,
+            stockQuantity);
     }
 
     @Override

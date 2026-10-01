@@ -14,9 +14,11 @@ public class PercentagePromotion extends Promotion
         LocalDateTime expiry,
         BigDecimal minimumSubtotal,
         BigDecimal discountRate,
-        BigDecimal maximumDiscount)
+        BigDecimal maximumDiscount,
+        String district,
+        boolean firstTimeOnly)
     {
-        super(code, expiry, minimumSubtotal);
+        super(code, expiry, minimumSubtotal, district, firstTimeOnly);
         this.discountRate = Validator.validateInRange(
             discountRate,
             BigDecimal.ZERO,
@@ -46,5 +48,26 @@ public class PercentagePromotion extends Promotion
         discount = subtotal.multiply(discountRate);
 
         return (discount.min(maximumDiscount));
+    }
+
+    @Override
+    public PromotionType getType()
+    {
+        return (PromotionType.PERCENTAGE);
+    }
+
+    @Override
+    public String toString()
+    {
+        return ("%s{code=%s, rate=%s, maxDiscount=%s, minSubtotal=%s, expiry=%s, district=%s, firstTimeOnly=%s}"
+            .formatted(
+                getType(),
+                getCode(),
+                discountRate,
+                maximumDiscount,
+                getMinimumSubtotal(),
+                getExpiry(),
+                getDistrict().orElse("any"),
+                isFirstTimeOnly()));
     }
 }

@@ -1,53 +1,26 @@
 package fooddelivery.repository;
 
 import fooddelivery.model.order.Order;
-import fooddelivery.utils.Validator;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
 
 public class OrderRepository
+    extends KeyedRepository<Order>
 {
-    private final Map<String, Order> orders;
-
     public OrderRepository()
     {
-        orders = new LinkedHashMap<>();
+        super("Order", "Order ID");
     }
 
-    public void save(Order order)
+    // Finding a order by its key
+
+    @Override
+    protected String keyOf(Order order)
     {
-        order = Validator.validateNotNull(
-            order, "Order");
-
-        if (exists(order.getId()))
-            throw new IllegalArgumentException(
-                "Order ID already exists: "
-                + order.getId());
-
-        orders.put(order.getId(), order);
+        return (order.getId());
     }
 
     public Optional<Order> findById(String id)
     {
-        id = Validator.validateString(id, "Order ID");
-
-        return (Optional.ofNullable(orders.get(id)));
-    }
-
-    public Collection<Order> findAll()
-    {
-        return (Collections.unmodifiableCollection(
-            orders.values()));
-    }
-
-    public boolean exists(String id)
-    {
-        id = Validator.validateString(id, "Order ID");
-
-        return (orders.containsKey(id));
+        return (findByKey(id));
     }
 }

@@ -1,18 +1,38 @@
 package fooddelivery.utils;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 public final class ConsoleUtils
 {
     // Constants
 
-    public static final String SEPARATOR = "----------------------------------------------------";
-    public static final String DOUBLE_SEPARATOR = "====================================================";
+    public static final String SEPARATOR =
+        "----------------------------------------------------";
+
+    public static final String DOUBLE_SEPARATOR =
+        "====================================================";
+
+    public static final DateTimeFormatter DATE_TIME =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private static final int LABEL_WIDTH = 25;
     private static final int MAX_COLUMN_WIDTH = 24;
 
     // Constructors
 
-    private ConsoleUtils() {}
+    private ConsoleUtils()
+    {
+    }
 
     // Output
 
@@ -21,14 +41,14 @@ public final class ConsoleUtils
         System.out.print(text);
     }
 
+    public static void println()
+    {
+        System.out.println();
+    }
+
     public static void println(Object text)
     {
         System.out.println(text);
-    }
-
-    public static String newLine()
-    {
-        return (System.lineSeparator());
     }
 
     public static void printInvalidInput(String message)
@@ -40,25 +60,80 @@ public final class ConsoleUtils
 
     public static String separator()
     {
-        return ("  " + SEPARATOR + newLine());
+        return ("  " + SEPARATOR + System.lineSeparator());
     }
 
     public static String sectionTitle(String title)
     {
-        return ("%s%n  %s%n%s%n".formatted(DOUBLE_SEPARATOR, title, DOUBLE_SEPARATOR));
+        return ("%s%n  %s%n%s%n"
+            .formatted(DOUBLE_SEPARATOR, title, DOUBLE_SEPARATOR));
     }
 
     // Formatting
 
     public static String fieldLine(String label, Object value)
     {
-        return (("  %-" + LABEL_WIDTH + "s %s%n").formatted(label + ":", value));
+        return (("  %-" + LABEL_WIDTH + "s %s%n")
+            .formatted(label + ":", value));
     }
 
-    public static String money(double amount)
+    // Value Formatting
+
+    public static String money(BigDecimal amount)
     {
-        return ("%.2f".formatted(amount));
+        return (twoDecimals(amount));
     }
+
+    public static String rating(double value)
+    {
+        return (twoDecimals(value));
+    }
+
+    private static String twoDecimals(Object value)
+    {
+        return ("%.2f".formatted(value));
+    }
+
+    public static String when(LocalDateTime time)
+    {
+        return (time.format(DATE_TIME));
+    }
+
+    public static String duration(Duration value)
+    {
+        long seconds;
+        long minutes;
+
+        seconds = value.getSeconds();
+        if (seconds < 60)
+            return (seconds + " sec");
+
+        minutes = value.toMinutes();
+        return ((minutes / 60) + "h " + (minutes % 60) + "m");
+    }
+
+    public static String duration(Optional<Duration> value)
+    {
+        return (value.isPresent()
+            ? duration(value.get())
+            : "-");
+    }
+
+    public static String lastOrderDate(Optional<LocalDate> value)
+    {
+        return (value.isPresent()
+            ? value.get().toString()
+            : "never");
+    }
+
+    public static String commaSeparated(Collection<?> values)
+    {
+        return (values.stream()
+            .map(String::valueOf)
+            .collect(Collectors.joining(", ")));
+    }
+
+    // Tables
 
     private static String truncate(String text, int width)
     {
@@ -98,14 +173,18 @@ public final class ConsoleUtils
         for (i = 0; i < rows.length; i++)
         {
             for (j = 0; j < rows[i].length; j++)
-                widths[j] = Math.max(widths[j], String.valueOf(rows[i][j]).length());
+                widths[j] = Math.max(
+                    widths[j], String.valueOf(rows[i][j]).length());
         }
         for (j = 0; j < columns; j++)
             widths[j] = Math.min(widths[j], MAX_COLUMN_WIDTH);
         return (renderTable(headers, rows, widths));
     }
 
-    private static String renderTable(String[] headers, Object[][] rows, int[] widths)
+    private static String renderTable(
+        String[] headers,
+        Object[][] rows,
+        int[] widths)
     {
         StringBuilder table;
         int i;
@@ -118,7 +197,10 @@ public final class ConsoleUtils
         return (table.toString());
     }
 
-    private static void appendRow(StringBuilder table, Object[] values, int[] widths)
+    private static void appendRow(
+        StringBuilder table,
+        Object[] values,
+        int[] widths)
     {
         int j;
 
@@ -131,29 +213,98 @@ public final class ConsoleUtils
         table.append("|").append(System.lineSeparator());
     }
 
-    public static String formatMenu(String title, String[] options)
+    // Structured Output
+
+    public static void printNumberedList(String... entries)
     {
-        StringBuilder menu;
+        int index;
 
-        menu = new StringBuilder();
-        menu.append("╔══════════════════════════════════════════╗")
-            .append(newLine());
-        menu.append("║       ")
-            .append(title)
-            .append("           ║")
-            .append(newLine());
-        menu.append("╠══════════════════════════════════════════╣")
-            .append(newLine());
-        for (int index = 0; index < options.length; index++)
-        {
-            menu.append("║  %2d.  %-34s ║"
-                .formatted(index + 1, options[index]))
-                .append(newLine());
-        }
-        menu.append("╚══════════════════════════════════════════╝")
-            .append(newLine());
-
-        return (menu.toString());
+        for (index = 0; index < entries.length; index++)
+            println("  %2d.  %s"
+                .formatted(index + 1, entries[index]));
     }
 
+    public static void printMenu(
+        String title,
+        int exitChoice,
+        String exitLabel,
+        String... options)
+    {
+        println();
+        println(sectionTitle(title));
+        printNumberedList(options);
+        println("  %2d.  %s"
+            .formatted(exitChoice, exitLabel));
+        println();
+    }
+
+    public static void printBanner(Object... labelThenValue)
+    {
+        StringBuilder banner;
+        int index;
+
+        banner = new StringBuilder();
+        banner.append(separator());
+        for (index = 0; index + 1 < labelThenValue.length; index += 2)
+            banner.append(fieldLine(
+                String.valueOf(labelThenValue[index]),
+                labelThenValue[index + 1]));
+        banner.append(separator());
+        print(banner);
+    }
+
+    public static void printTable(
+        String title,
+        String emptyMessage,
+        String[] headers,
+        Object[][] rows)
+    {
+        if (rows.length == 0)
+        {
+            println(emptyMessage);
+            return;
+        }
+        println(sectionTitle(title));
+        print(formatTable(headers, rows));
+    }
+
+    public static <T> Object[][] rows(
+        Collection<T> items,
+        Function<T, Object[]> cells)
+    {
+        return (items.stream()
+            .map(cells)
+            .toArray(Object[][]::new));
+    }
+
+    public static <T> Object[][] numberedRows(
+        Collection<T> items,
+        BiFunction<T, Integer, Object[]> cells)
+    {
+        AtomicInteger number;
+
+        number = new AtomicInteger(1);
+
+        return (rows(items, item -> cells.apply(
+            item, number.getAndIncrement())));
+    }
+
+    public static void printStatusBanner(String title)
+    {
+        println(separator());
+        println("  " + title);
+        println(separator());
+    }
+
+    public static void printError(Exception e)
+    {
+        println("Error: " + (e.getMessage() == null
+            ? e.toString()
+            : e.getMessage()));
+    }
+
+    public static void printGoodbye()
+    {
+        println(sectionTitle("Goodbye"));
+    }
 }

@@ -2,7 +2,6 @@ package fooddelivery.model.order;
 
 import fooddelivery.model.restaurant.menu.MenuItem;
 import fooddelivery.utils.Validator;
-
 import java.math.BigDecimal;
 
 public class OrderItem
@@ -31,5 +30,15 @@ public class OrderItem
     public BigDecimal calculateTotal()
     {
         return (menuItem.calculatePrice(quantity));
+    }
+
+    @Override
+    public String toString()
+    {
+        return ("OrderItem{item=%s, quantity=%s, total=%s}"
+            .formatted(
+                menuItem.getName(),
+                quantity,
+                calculateTotal()));
     }
 }

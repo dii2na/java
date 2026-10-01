@@ -1,8 +1,9 @@
 package fooddelivery.model.restaurant.menu;
 
 import fooddelivery.utils.Validator;
-
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ComboItem extends MenuItem
@@ -17,7 +18,8 @@ public class ComboItem extends MenuItem
         BigDecimal discountRate,
         String category,
         int preparationTime,
-        boolean available)
+        boolean available,
+        BigDecimal stockQuantity)
     {
         super(
             id,
@@ -25,10 +27,18 @@ public class ComboItem extends MenuItem
             calculateItemsTotal(items),
             category,
             preparationTime,
-            available);
+            available,
+            stockQuantity);
 
-        this.items = List.copyOf(
-            Validator.validateNotNull(items, "Combo items"));
+        items = Validator.validateNotNull(
+            items, "Combo items");
+
+        if (items.isEmpty())
+            throw new IllegalArgumentException(
+                "Combo must contain at least one item");
+
+        this.items = Collections.unmodifiableList(
+            new ArrayList<>(items));
         this.discountRate = Validator.validateInRange(
             discountRate,
             BigDecimal.ZERO,
@@ -36,22 +46,23 @@ public class ComboItem extends MenuItem
             "Discount rate");
     }
 
-    private static BigDecimal calculateItemsTotal(List<MenuItem> items)
+    private static BigDecimal calculateItemsTotal(
+        List<MenuItem> items)
     {
-        BigDecimal total;
+        items = Validator.validateNotNull(
+            items, "Combo items");
 
-        items = Validator.validateNotNull(items, "Combo items");
         if (items.isEmpty())
             throw new IllegalArgumentException(
                 "Combo must contain at least one item");
-        total = BigDecimal.ZERO;
-        for (MenuItem item : items)
-        {
-            Validator.validateNotNull(item, "Combo item");
-            total = total.add(item.getPrice());
-        }
 
-        return (total);
+        return (items.stream()
+            .map(item -> Validator.validateNotNull(
+                item, "Combo item"))
+            .map(MenuItem::getPrice)
+            .reduce(
+                BigDecimal.ZERO,
+                BigDecimal::add));
     }
 
     public List<MenuItem> getItems()
@@ -65,7 +76,16 @@ public class ComboItem extends MenuItem
     }
 
     @Override
-    public BigDecimal calculatePrice(BigDecimal quantity)
+    public BigDecimal getDisplayPrice()
+    {
+        return (getPrice()
+            .multiply(
+                BigDecimal.ONE.subtract(discountRate)));
+    }
+
+    @Override
+    public BigDecimal calculatePrice(
+        BigDecimal quantity)
     {
         BigDecimal discountedPrice;
 
@@ -73,8 +93,23 @@ public class ComboItem extends MenuItem
             quantity, "Quantity");
 
         discountedPrice = getPrice()
-            .multiply(BigDecimal.ONE.subtract(discountRate));
+            .multiply(
+                BigDecimal.ONE.subtract(discountRate));
 
         return (discountedPrice.multiply(quantity));
+    }
+
+    @Override
+    public String toString()
+    {
+        return ("ComboItem{id=%s, name=%s, category=%s, price=%s, parts=%d, discount=%s, available=%s}"
+            .formatted(
+                getId(),
+                getName(),
+                getCategory(),
+                getDisplayPrice(),
+                items.size(),
+                discountRate,
+                isAvailable()));
     }
 }
